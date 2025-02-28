@@ -1,0 +1,51 @@
+{
+  "name": "hospital-backend-system-gigsama-test",
+  "version": "1.0.0",
+  "description": "a backend system for a hospital that handles user signups, patient- doctor assignments, doctor note submissions, and dynamic scheduling of actionable steps based on live LLM processing.",
+  "main": "index.js",
+  "scripts": {
+    "build": "prisma generate",
+    "start": "node ./dist/src/index.js",
+    "compile": "tsc -p ./tsconfig.json",
+    "dev": "ts-node-dev --respawn ./src/index.ts",
+    "seed": "prisma db seed",
+    "seed-users": "ts-node ./src/seed-users.ts",
+    "seed-data": "ts-node ./prisma/seed.ts",
+    "seed-init": "ts-node ./prisma/initSeed.ts",
+    "test-sub": "ts-node ./prisma/testSubscription.ts",
+    "test-sub2": "ts-node ./prisma/test2Subscription.ts",
+    "test": "TEST=true jest",
+    "test:watch": "TEST=true jest --watch",
+    "postgres:start": "docker-compose up -d",
+    "db:push": "prisma db push",
+    "migrate:reset": "prisma migrate reset",
+    "migrate:create": "prisma migrate dev --create-only",
+    "migrate:dev": "prisma migrate dev",
+    "migrate:deploy": "prisma migrate deploy",
+    "prisma:generate": "prisma generate"
+  },
+  "keywords": [],
+  "author": "Atogebania Alexander",
+  "license": "ISC",
+  "dependencies": {
+    "@hapi/hapi": "^21.3.12",
+    "@hapi/inert": "^7.1.0",
+    "@hapi/vision": "^7.0.3",
+    "@prisma/client": "^6.4.1",
+    "bcryptjs": "^3.0.2",
+    "dotenv": "^16.4.7",
+    "hapi-graceful-pm2": "^1.0.17",
+    "joi": "^17.13.3",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/hapi-auth-jwt2": "^8.0.2",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/node": "^22.13.5",
+    "prisma": "^6.4.1",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.8.2"
+  }
+}
