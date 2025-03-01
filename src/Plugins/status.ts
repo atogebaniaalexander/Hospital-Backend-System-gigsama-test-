@@ -1,7 +1,7 @@
 import Hapi from "@hapi/hapi";
 import Joi from "joi";
-import { executePrismaMethod,isUserAdmin } from "../Helpers";
-import { getLogsForDateRange, logsHandler } from "../Utils";
+import { isUserAdmin } from "../Helpers";
+import { logsHandler } from "../Utils";
 
 const API_AUTH_STRATEGY = "API";
 

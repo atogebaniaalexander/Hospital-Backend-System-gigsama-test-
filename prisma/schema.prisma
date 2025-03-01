@@ -102,6 +102,7 @@ model Reminder {
 enum TokenType {
   DOCTOR
   PATIENT
+  ADMIN
 }
 model Token {
   id            Int          @default(autoincrement()) @id

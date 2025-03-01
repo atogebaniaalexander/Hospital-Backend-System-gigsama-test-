@@ -1,6 +1,6 @@
 import * as Hapi from "@hapi/hapi";
 import Joi from "joi";
-import { executePrismaMethod, RequestType } from "../Helpers";
+import { executePrismaMethod, RequestType, TokenType } from "../Helpers";
 import { APITokenPayload } from "../Models";
 
 export const AUTHENTICATION_TOKEN_EXPIRATION_MINUTES = 720;
@@ -20,6 +20,7 @@ export async function doctorValidateAPIToken(
     {
       where: {
         doctorId: doctorId,
+        type: TokenType.DOCTOR,
       },
       select: {
         id: true,
@@ -29,7 +30,7 @@ export async function doctorValidateAPIToken(
 
   if (!decodedTokenId) {
     logger.error("Invalid credentials", RequestType.READ, "validation Request");
-    throw new Error("Invalid credentials");
+    return h.response({ message: "Invalid credentials" }).code(403);
   }
 
   const tokenId = decodedTokenId.id;
@@ -123,6 +124,7 @@ export async function adminValidateAPIToken(
     {
       where: {
         adminId: adminId,
+        type: TokenType.ADMIN,
       },
       select: {
         id: true,
@@ -132,7 +134,7 @@ export async function adminValidateAPIToken(
 
   if (!decodedTokenId) {
     logger.error("Invalid credentials", RequestType.READ, "validation Request");
-    throw new Error("Invalid credentials");
+    return h.response({ message: "Invalid credentials" }).code(403);
   }
 
   const tokenId = decodedTokenId.id;
@@ -232,6 +234,7 @@ export async function patientValidateAPIToken(
     {
       where: {
         patientId: patientId,
+        type: TokenType.PATIENT,
       },
       select: {
         id: true,
@@ -241,7 +244,7 @@ export async function patientValidateAPIToken(
 
   if (!decodedTokenId) {
     logger.error("Invalid credentials", RequestType.READ, "validation Request");
-    throw new Error("Invalid credentials");
+    return h.response({message:"Invalid credentials"}).code(403);
   }
 
   const tokenId = decodedTokenId.id;

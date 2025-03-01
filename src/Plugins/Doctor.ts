@@ -1,7 +1,9 @@
 import Hapi from "@hapi/hapi";
 import Joi from "joi";
 import dotenv from "dotenv";
-import { doctorValidateAPIToken } from "../Helpers";
+import { doctorValidateAPIToken, isUserDoctor } from "../Helpers";
+import { createDoctorHandler } from "../Handlers";
+import { createDoctorInputValidator } from "../Validators";
 
 declare module "@hapi/hapi" {
   export interface AuthCredentials {
@@ -34,7 +36,27 @@ const doctorPlugin: Hapi.Plugin<void> = {
            validate: doctorValidateAPIToken,
          });
          server.auth.default(API_AUTH_STRATEGY);
-         server.route([]);
+         server.route([
+          // create Doctor route
+           {
+             method: "POST",
+             path: "/api/v1/Doctor/create",
+             handler: createDoctorHandler,
+             options: {
+               pre: [isUserDoctor],
+               auth: {
+                 mode: "required",
+                 strategy: API_AUTH_STRATEGY,
+               },
+               validate: {
+                 payload: createDoctorInputValidator,
+                 failAction: (request, h, err) => {
+                   throw err;
+                 },
+               },
+             },
+           },
+         ]);
     }
 };
 

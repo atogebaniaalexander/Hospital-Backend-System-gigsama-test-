@@ -15,3 +15,9 @@ export enum RequestType {
   DELETE = "DELETE",
   READ = "READ",
 }
+
+export enum TokenType {
+  DOCTOR = "DOCTOR",
+  PATIENT = "PATIENT",
+  ADMIN = "ADMIN"
+}
