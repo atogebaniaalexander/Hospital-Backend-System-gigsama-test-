@@ -44,12 +44,15 @@ const path = __importStar(require("path"));
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const winston_daily_rotate_file_1 = __importDefault(require("winston-daily-rotate-file"));
 const util_1 = require("util");
+const Helpers_1 = require("../Helpers");
 // Ensure the logs directory exists
 const logDir = path.join(__dirname, 'logs');
 fs_extra_1.default.ensureDirSync(logDir);
 // Custom log format to match the required structure
 const logFormat = winston.format.printf(({ message, requestType, detail, Requester }) => {
+    const timestamp = (0, Helpers_1.getCurrentDate)();
     return JSON.stringify({
+        timestamp,
         requestType,
         message,
         detail,

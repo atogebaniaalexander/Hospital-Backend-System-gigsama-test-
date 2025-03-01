@@ -7,13 +7,14 @@ const joi_1 = __importDefault(require("joi"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const Helpers_1 = require("../Helpers");
 const Utils_1 = require("../Utils");
+const Handlers_1 = require("../Handlers");
 dotenv_1.default.config();
 const JWT_SECRET = process.env.JWT_SECRET || "SUPER_SECRET_JWT_SECRET";
 const JWT_ALGORITHM = "HS256";
-const API_AUTH_STRATEGY = "API";
+const API_AUTH_STRATEGY = "ADMIN-JWT";
 const adminPlugin = {
-    name: "doctor",
-    dependencies: ["prisma", "hapi-auth-jwt2", "email"],
+    name: "admin",
+    dependencies: ["prisma", "hapi-auth-jwt2"],
     register: async function (server) {
         if (!process.env.JWT_SECRET) {
             server.log("warn", "The JWT_SECRET env var is not set. This is unsafe! If running in production, set it.");
@@ -23,8 +24,21 @@ const adminPlugin = {
             verifyOptions: { algorithms: [JWT_ALGORITHM] },
             validate: Helpers_1.adminValidateAPIToken,
         });
-        server.auth.default(API_AUTH_STRATEGY);
         server.route([
+            // get admins
+            {
+                method: "GET",
+                path: "/api/v1/Admins",
+                handler: Handlers_1.listAdminHandler,
+                options: {
+                    pre: [Helpers_1.isUserAdmin],
+                    auth: {
+                        mode: "required",
+                        strategy: API_AUTH_STRATEGY
+                    }
+                }
+            },
+            //logs
             {
                 method: "PUT",
                 path: "/api/v1/logs/{startDate}/{endDate}",

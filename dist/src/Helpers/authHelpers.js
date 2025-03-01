@@ -7,6 +7,8 @@ exports.adminValidateAPIToken = adminValidateAPIToken;
 exports.isUserAdmin = isUserAdmin;
 exports.patientValidateAPIToken = patientValidateAPIToken;
 exports.isUserPatient = isUserPatient;
+exports.isDoctorOrAdmin = isDoctorOrAdmin;
+exports.isPatientOrAdmin = isPatientOrAdmin;
 const Helpers_1 = require("../Helpers");
 exports.AUTHENTICATION_TOKEN_EXPIRATION_MINUTES = 720;
 async function doctorValidateAPIToken(decoded, request, h) {
@@ -239,5 +241,77 @@ async function isUserPatient(request, h) {
         return h.response({ message: "Not authorized!!" }).code(403);
     }
     return h.continue;
+}
+async function isDoctorOrAdmin(request, h) {
+    const credentials = request.auth.credentials;
+    const { prisma } = request.server.app;
+    let isDoctor = false;
+    let isAdmin = false;
+    if (credentials.doctorId !== null || credentials.doctorId !== undefined) {
+        const checkIfIsDoctor = await (0, Helpers_1.executePrismaMethod)(prisma, "doctor", "findFirst", {
+            where: {
+                id: credentials.doctorId,
+                email: credentials.email
+            }
+        });
+        if (!checkIfIsDoctor) {
+            return h.response({ message: "Not authorized!!" }).code(403);
+        }
+        isDoctor = true;
+    }
+    else if (credentials.adminId !== null || credentials.adminId !== undefined) {
+        const checkIfIsAdmin = await (0, Helpers_1.executePrismaMethod)(prisma, "admin", "findFirst", {
+            where: {
+                id: credentials.adminId,
+                email: credentials.email
+            }
+        });
+        if (!checkIfIsAdmin) {
+            return h.response({ message: "Not authorized!!" }).code(403);
+        }
+        isAdmin = true;
+    }
+    else {
+        return h.response({ message: "Not authorized!!" }).code(403);
+    }
+    if (isDoctor || isAdmin) {
+        return h.continue;
+    }
+}
+async function isPatientOrAdmin(request, h) {
+    const credentials = request.auth.credentials;
+    const { prisma } = request.server.app;
+    let isPatient = false;
+    let isAdmin = false;
+    if (credentials.patientId !== null || credentials.patientId !== undefined) {
+        const checkIfIsPatient = await (0, Helpers_1.executePrismaMethod)(prisma, "patient", "findFirst", {
+            where: {
+                id: credentials.doctorId,
+                email: credentials.email
+            }
+        });
+        if (!checkIfIsPatient) {
+            return h.response({ message: "Not authorized!!" }).code(403);
+        }
+        isPatient = true;
+    }
+    else if (credentials.adminId !== null || credentials.adminId !== undefined) {
+        const checkIfIsAdmin = await (0, Helpers_1.executePrismaMethod)(prisma, "admin", "findFirst", {
+            where: {
+                id: credentials.adminId,
+                email: credentials.email
+            }
+        });
+        if (!checkIfIsAdmin) {
+            return h.response({ message: "Not authorized!!" }).code(403);
+        }
+        isAdmin = true;
+    }
+    else {
+        return h.response({ message: "Not authorized!!" }).code(403);
+    }
+    if (isPatient || isAdmin) {
+        return h.continue;
+    }
 }
 //# sourceMappingURL=authHelpers.js.map
