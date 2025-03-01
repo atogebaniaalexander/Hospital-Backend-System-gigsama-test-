@@ -330,3 +330,84 @@ export async function isUserPatient(
   return h.continue;
 }
 
+export async function isDoctorOrAdmin( request: Hapi.Request, h: Hapi.ResponseToolkit) {
+  const credentials = request.auth.credentials;
+  const {prisma} = request.server.app;
+  let isDoctor = false;
+  let isAdmin = false;
+  if(credentials.doctorId !== null || credentials.doctorId !== undefined){
+    const checkIfIsDoctor = await executePrismaMethod(prisma,"doctor","findFirst",{
+        where:{
+          id:credentials.doctorId,
+          email: credentials.email
+        }
+    });
+
+    if(!checkIfIsDoctor){
+      return h.response({message: "Not authorized!!"}).code(403);
+    }
+
+    isDoctor = true;
+  } else if(credentials.adminId !== null || credentials.adminId !== undefined){
+     const checkIfIsAdmin = await executePrismaMethod(prisma,"admin","findFirst",{
+        where:{
+          id:credentials.adminId,
+          email: credentials.email
+        }
+    });
+
+    if(!checkIfIsAdmin){
+      return h.response({message: "Not authorized!!"}).code(403);
+    }
+
+    isAdmin = true;
+
+  }else{
+     return h.response({message: "Not authorized!!"}).code(403);
+  }
+  
+  if(isDoctor || isAdmin) {
+    return h.continue;
+  }
+}
+
+export async function isPatientOrAdmin( request: Hapi.Request, h: Hapi.ResponseToolkit) {
+  const credentials = request.auth.credentials;
+  const {prisma} = request.server.app;
+  let isPatient = false;
+  let isAdmin = false;
+  if(credentials.patientId !== null || credentials.patientId !== undefined){
+    const checkIfIsPatient = await executePrismaMethod(prisma,"patient","findFirst",{
+        where:{
+          id:credentials.doctorId,
+          email: credentials.email
+        }
+    });
+
+    if(!checkIfIsPatient){
+      return h.response({message: "Not authorized!!"}).code(403);
+    }
+
+    isPatient = true;
+  } else if(credentials.adminId !== null || credentials.adminId !== undefined){
+     const checkIfIsAdmin = await executePrismaMethod(prisma,"admin","findFirst",{
+        where:{
+          id:credentials.adminId,
+          email: credentials.email
+        }
+    });
+
+    if(!checkIfIsAdmin){
+      return h.response({message: "Not authorized!!"}).code(403);
+    }
+
+    isAdmin = true;
+
+  }else{
+     return h.response({message: "Not authorized!!"}).code(403);
+  }
+  
+  if(isPatient || isAdmin) {
+    return h.continue;
+  }
+}

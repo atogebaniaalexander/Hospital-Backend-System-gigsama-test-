@@ -41,6 +41,7 @@ export async function createServer(): Promise<Hapi.Server> {
 
   // Inject the logger into the server's application state
   server.app.logger = logger;
+  
   const plugins: Array<Hapi.ServerRegisterPluginObject<any>> = [
     { plugin: pm2plugin },
     { plugin: hapiAuthJwt2 },

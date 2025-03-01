@@ -4,7 +4,7 @@ import * as path from "path";
 import fs from "fs-extra";
 import DailyRotateFile from "winston-daily-rotate-file";
 import { promisify } from "util";
-import { RequestType } from "../Helpers";
+import { getCurrentDate, RequestType } from "../Helpers";
 // Ensure the logs directory exists
 const logDir = path.join(__dirname, 'logs');
 fs.ensureDirSync(logDir);
@@ -12,7 +12,9 @@ fs.ensureDirSync(logDir);
 // Custom log format to match the required structure
 const logFormat = winston.format.printf(
   ({ message, requestType, detail, Requester }) => {
+    const timestamp = getCurrentDate();
     return JSON.stringify({
+      timestamp,
       requestType,
       message,
       detail,

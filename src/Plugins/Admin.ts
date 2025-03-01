@@ -1,7 +1,9 @@
 import Hapi from "@hapi/hapi";
 import Joi from "joi";
 import dotenv from "dotenv";
-import { adminValidateAPIToken } from "../Helpers";
+import { adminValidateAPIToken, isUserAdmin } from "../Helpers";
+import { logsHandler } from "../Utils";
+import { listAdminHandler } from "../Handlers";
 
 declare module "@hapi/hapi" {
   export interface AuthCredentials {
@@ -16,11 +18,11 @@ dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET || "SUPER_SECRET_JWT_SECRET";
 const JWT_ALGORITHM = "HS256";
-const API_AUTH_STRATEGY = "API";
+const API_AUTH_STRATEGY = "ADMIN-JWT";
 
 const adminPlugin: Hapi.Plugin<void> = {
-    name: "doctor",
-    dependencies: ["prisma", "hapi-auth-jwt2", "email"],
+    name: "admin",
+    dependencies: ["prisma", "hapi-auth-jwt2"],
     register: async function (server: Hapi.Server) {
          if (!process.env.JWT_SECRET) {
            server.log(
@@ -33,8 +35,44 @@ const adminPlugin: Hapi.Plugin<void> = {
            verifyOptions: { algorithms: [JWT_ALGORITHM] },
            validate: adminValidateAPIToken,
          });
-         server.auth.default(API_AUTH_STRATEGY);
-         server.route([]);
+
+         server.route([
+          // get admins
+          {
+            method: "GET",
+            path: "/api/v1/Admins",
+            handler: listAdminHandler,
+              options:{
+                pre:[isUserAdmin],
+                auth:{
+                  mode:"required",
+                  strategy: API_AUTH_STRATEGY
+                }
+              }
+          },
+          //logs
+          {
+            method: "PUT",
+            path: "/api/v1/logs/{startDate}/{endDate}",
+            handler: logsHandler,
+            options: {
+              pre: [isUserAdmin],
+              auth: {
+                mode: "required",
+                strategy: API_AUTH_STRATEGY,
+              },
+              validate: {
+                params: Joi.object({
+                  startDate: Joi.string().required(),
+                  endDate: Joi.string().required(),
+                }),
+                failAction: (request, h, err) => {
+                  throw err;
+                },
+              },
+            },
+          },
+         ]);
     }
 };
 
