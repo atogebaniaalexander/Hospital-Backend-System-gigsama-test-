@@ -1,8 +1,121 @@
 generator client {
   provider = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-1.1.x"]
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model Admin{
+  id        String    @id @default(uuid())
+  name      String
+  email     String    @unique
+  password  String
+  createdAt String
+  updatedAt String
+  token     Token?
+}
+model Doctor {
+  id        String    @id @default(uuid())
+  name      String
+  email     String    @unique
+  password  String
+  specialty String?
+  createdAt String
+  updatedAt String
+  patients  Patient[]
+  notes     Note[]
+  reminders Reminder[]
+  token     Token?
+
+  @@index([email])
+}
+
+model Patient {
+  id             String    @id @default(uuid())
+  name           String
+  email          String    @unique
+  password       String
+  createdAt      String
+  updatedAt      String
+  doctorId       String?
+  assignedDoctor Doctor?   @relation(fields: [doctorId], references: [id])
+  notes          Note[]
+  reminders      Reminder[]
+  token          Token?
+
+  @@index([email])
+  @@index([doctorId])
+}
+
+model Note {
+  id              String          @id @default(uuid())
+  patientId       String
+  patient         Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId        String
+  doctor          Doctor          @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  content         String
+  createdAt       String
+  updatedAt       String
+  actionableSteps ActionableStep[]
+
+  @@index([patientId])
+  @@index([doctorId])
+}
+
+model ActionableStep {
+  id            String       @id @default(uuid())
+  type          StepType
+  description   String
+  scheduledDate DateTime
+  isCompleted   Boolean      @default(false)
+  noteId        String
+  note          Note         @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@index([noteId])
+}
+
+enum StepType {
+  CHECKLIST
+  PLAN
+}
+
+model Reminder {
+  id            String   @id @default(uuid())
+  patientId     String
+  patient       Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId      String
+  doctor        Doctor   @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  message       String
+  scheduledTime DateTime
+  isCompleted   Boolean  @default(false)
+  createdAt     String
+  updatedAt     String
+
+  @@index([patientId])
+  @@index([doctorId])
+}
+
+
+enum TokenType {
+  DOCTOR
+  PATIENT
+}
+model Token {
+  id            Int          @default(autoincrement()) @id
+  type          TokenType
+  Token         String?      @unique
+  valid         Boolean     @default(true)
+  expiration    DateTime
+  createdAt     String
+  updatedAt     String
+  adminId       String? @unique
+  admin         Admin?    @relation(fields: [adminId],references: [id])
+  doctorId      String? @unique
+  doctor        Doctor ?     @relation(fields: [doctorId], references: [id])
+  patientId      String? @unique
+  patient        Patient ?     @relation(fields: [patientId], references: [id])
+  
 }

@@ -34,15 +34,19 @@
     "@prisma/client": "^6.4.1",
     "bcryptjs": "^3.0.2",
     "dotenv": "^16.4.7",
+    "fs-extra": "^11.3.0",
     "hapi-graceful-pm2": "^1.0.17",
     "joi": "^17.13.3",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "winston": "^3.17.0",
+    "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/hapi-auth-jwt2": "^8.0.2",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^22.13.5",
+    "@types/winston": "^2.4.4",
     "prisma": "^6.4.1",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
