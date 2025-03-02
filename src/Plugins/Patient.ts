@@ -2,7 +2,7 @@ import Hapi from "@hapi/hapi";
 import Joi from "joi";
 import dotenv from "dotenv";
 import { isPatientOrAdmin, isUserPatient, patientValidateAPIToken } from "../Helpers";
-import { createPatientHandler, deletePatientHandler, listPatientHandler, updatePatientHandler } from "../Handlers";
+import { assignDoctorToPatientHandler, createPatientHandler, deletePatientHandler, listPatientHandler, updatePatientHandler } from "../Handlers";
 import { createPatientInputValidator, updatePatientInputValidator } from "../Validators";
 
 declare module "@hapi/hapi" {
@@ -106,7 +106,29 @@ const patientPlugin: Hapi.Plugin<void> = {
                       },
                     }
                   }
-            }
+            },
+            // select a doctor route
+            {
+              method: "POST",
+              path: "/api/v1/Patient/selectDoctor",
+              handler: assignDoctorToPatientHandler,
+              options: {
+                pre: [isUserPatient],
+                auth: {
+                  mode: "required",
+                  strategy: API_AUTH_STRATEGY
+                },
+                validate: {
+                  payload: Joi.object({
+                    doctorId: Joi.string().required()
+                  }),
+                  failAction: (request, h, err) => {
+                    throw err;
+                  }
+                }
+              }
+            },
+            
          ]);
     }
 };

@@ -3,10 +3,9 @@ import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 
-import { PrismaClient } from "@prisma/client";
 
 
-import { APITokenPayload, AdminModel, DoctorModel, PatientModel } from "../Models";
+import { DoctorModel, PatientModel } from "../Models";
 import { executePrismaMethod, getCurrentDate, RequestType, TokenType} from "../Helpers"
 
 import { add } from "date-fns";
@@ -30,7 +29,7 @@ function generateAuthToken (
     });
 }
 
-function decodeAuthToken(token: string){
+export function decodeAuthToken(token: string){
      try {
        const verifyToken = jwt.verify(token, JWT_SECRET);
        if (verifyToken) {
@@ -156,15 +155,43 @@ export async function listDoctorsHandler(request:Hapi.Request, h:Hapi.ResponseTo
   const {name} = request.auth.credentials;
 
   try{
-    const doctors = await executePrismaMethod(prisma,"doctor","findMany",{});
+    const doctors = await executePrismaMethod(prisma,"doctor","findMany",{
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        available: true,
+        specialty: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    });
 
     if(!doctors){
       logger.error("Failed to fetch Doctors",RequestType.READ,name);
       return h.response({message: "Failed to fetch Doctors"}).code(404);
     }
 
+    let AllDoctors: any[] = [];
+    for(const doctor of doctors) {
+      let status = "Unavailable";
+      let id = 1;
+      if(doctor.available === true){
+        status = "Available"
+      }
+      const data = {
+        id:id,
+        doctorId: doctor.id,
+        email: doctor.email,
+        name: doctor.name,
+        specialty: doctor.specialty,
+        workStatus: status,
+      }
+      AllDoctors.push(data);
+      id++
+    }
     logger.info("Doctors fetched Successfully",RequestType.READ,name);
-    return h.response(doctors).code(200);
+    return h.response(AllDoctors).code(200);
 
   }catch(err:any){
     logger.error("Internal Server Error occurred, failed to fetch Doctors",RequestType.READ,name,err.toString());
@@ -176,7 +203,7 @@ export async function listDoctorsHandler(request:Hapi.Request, h:Hapi.ResponseTo
 export async function updateDoctorHandler(request:Hapi.Request,h:Hapi.ResponseToolkit){
   const { prisma,logger} = request.server.app;
   const { doctorId } = request.params;
-  const { name, email, specialty } = request.payload as DoctorModel;
+  const { name, email, specialty,available } = request.payload as DoctorModel;
   const credentials = request.auth.credentials;
 
   try{
@@ -195,8 +222,9 @@ export async function updateDoctorHandler(request:Hapi.Request,h:Hapi.ResponseTo
         id: checkIfUserExist.id,
       },
       data:{
-        name: name,
-        specialty: specialty,
+        name: name || checkIfUserExist.name,
+        specialty: specialty || checkIfUserExist.specialty,
+        available: available || checkIfUserExist.available,
         updatedAt: getCurrentDate(),
       }
     });
@@ -221,6 +249,17 @@ export async function deleteDoctorHandler(request: Hapi.Request,h:Hapi.ResponseT
   const { name } = request.auth.credentials;
 
   try{
+     const token = await executePrismaMethod(prisma,"token","delete",{
+      where:{
+        type: TokenType.DOCTOR,
+        patientId: doctorId
+      }
+    });
+
+     if(!token){
+      logger.error("Failed to delete token",RequestType.DELETE,name);
+      return h.response({message: "Failed to delete token"}).code(404);
+    }
     const Doctor = await executePrismaMethod(prisma,"doctor","delete",{
       where:{
         id: doctorId
@@ -352,18 +391,54 @@ export async function createPatientHandler(
 // list all patients
 export async function listPatientHandler(request:Hapi.Request,h:Hapi.ResponseToolkit){
   const {prisma, logger} = request.server.app;
-  const {name} = request.auth.credentials;
+  const {name,adminId} = request.auth.credentials;
 
   try{
-    const patients = await executePrismaMethod(prisma,"patient","findMany",{});
+    const patients = await executePrismaMethod(prisma,"patient","findMany",{
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        createdAt: true,
+        updateAt: true,
+      }
+    });
 
     if(!patients){
       logger.error("Failed to fetch Patients",RequestType.READ,name);
       return h.response({message: "Failed to fetch Patients"}).code(404);
     }
+    let AllPatients: any[] = [];
+    if(adminId) {
+      for(const patient of patients) {
+        let id = 1;
+        const data = {
+          id:id,
+          patientId: patient.id,
+          name: patient.name,
+          email: patient.email,
+          createdAt: patient.createdAt,
+          updateAt: patient.updateAt,
+        }
+        AllPatients.push(data);
+        id++
+      }
+    }else{
+      for(const patient of patients){
+        let id = 1;
+        const data = {
+          id:id,
+          patientId: patient.id,
+          name: patient.name,
+          email: patient.email,
+        }
+        AllPatients.push(data);
+        id++
+      }
+    }
 
     logger.info("Patients fetched Successfully",RequestType.READ,name);
-    return h.response(patients).code(200);
+    return h.response(AllPatients).code(200);
 
   }catch(err:any){
     logger.error("Internal Server Error occurred, failed to fetch Patients",RequestType.READ,name,err.toString());
@@ -393,7 +468,7 @@ export async function updatePatientHandler(request:Hapi.Request,h:Hapi.ResponseT
         id: checkIfUserExist.id,
       },
       data:{
-        name: name,
+        name: name || checkIfUserExist.name,
         updatedAt: getCurrentDate(),
       }
     });
@@ -418,6 +493,18 @@ export async function deletePatientHandler(request: Hapi.Request,h:Hapi.Response
   const { name } = request.auth.credentials;
 
   try{
+    const token = await executePrismaMethod(prisma,"token","delete",{
+      where:{
+        type: TokenType.PATIENT,
+        patientId: patientId
+      }
+    });
+
+     if(!token){
+      logger.error("Failed to delete token",RequestType.DELETE,name);
+      return h.response({message: "Failed to delete token"}).code(404);
+    }
+
     const Patient = await executePrismaMethod(prisma,"patient","delete",{
       where:{
         id: patientId
@@ -567,5 +654,184 @@ export async function logoutHandler(request: Hapi.Request, h: Hapi.ResponseToolk
   } catch (err: any) {
     logger.error("Internal Server Error occurred, failed to logout", RequestType.UPDATE, name, err.toString());
     return h.response({ message: "Internal Server Error occurred, failed to logout" }).code(500);
+  }
+}
+
+
+/** Patient-Doctor Assignment */
+// Assign doctor to patient
+export async function assignDoctorToPatientHandler(request: Hapi.Request, h: Hapi.ResponseToolkit) {
+  const { prisma, logger } = request.server.app;
+  const { doctorId } = request.payload as { doctorId: string };
+  const { patientId, name } = request.auth.credentials;
+  
+  try {
+    // Check if doctor exists
+    const doctor = await executePrismaMethod(prisma, "doctor", "findUnique", {
+      where: {
+        id: doctorId
+      }
+    });
+    
+    if (!doctor) {
+      logger.error(`Doctor not found with id ${doctorId}`, RequestType.READ, name);
+      return h.response({ message: "Doctor not found" }).code(404);
+    }
+    
+    // Update patient with selected doctor
+    const patient = await executePrismaMethod(prisma, "patient", "update", {
+      where: {
+        id: patientId
+      },
+      data: {
+        doctorId: doctorId,
+        updatedAt: getCurrentDate()
+      }
+    });
+    
+    if (!patient) {
+      logger.error(`Failed to assign doctor to patient ${patientId}`, RequestType.UPDATE, name);
+      return h.response({ message: "Failed to assign doctor" }).code(500);
+    }
+    
+    logger.info(`Doctor ${doctorId} assigned to patient ${patientId} successfully`, RequestType.UPDATE, name);
+    return h.response({ message: "Doctor assigned successfully" }).code(200);
+  } catch (err: any) {
+    logger.error(`Internal Server Error occurred, failed to assign doctor: ${err.toString()}`, RequestType.UPDATE, name);
+    return h.response({ message: "Internal Server Error occurred, failed to assign doctor" }).code(500);
+  }
+}
+// Get all patients assigned to a doctor
+export async function getDoctorPatientsHandler(request: Hapi.Request, h: Hapi.ResponseToolkit) {
+  const { prisma, logger } = request.server.app;
+  const { doctorId, name } = request.auth.credentials;
+  
+  try {
+    const patients = await executePrismaMethod(prisma, "patient", "findMany", {
+      where: {
+        doctorId: doctorId
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+      }
+    });
+    
+    let AllPatients: any[] = [];
+    for(const patient of patients){
+      let id = 1;
+      const data = {
+        id: id,
+        patientId: patient.id,
+        email: patient.email,
+        name: patient.name
+      }
+      AllPatients.push(data);
+      id++
+    }
+    logger.info(`Retrieved ${patients.length} patients for doctor ${doctorId}`, RequestType.READ, name);
+    return h.response(AllPatients).code(200);
+  } catch (err: any) {
+    logger.error(`Internal Server Error occurred, failed to retrieve doctor's patients: ${err.toString()}`, RequestType.READ, name);
+    return h.response({ message: "Internal Server Error occurred, failed to retrieve patients" }).code(500);
+  }
+}
+// Get all available doctors (for patient selection)
+export async function getAvailableDoctorsHandler(request: Hapi.Request, h: Hapi.ResponseToolkit) {
+  const { prisma, logger } = request.server.app;
+  const { name } = request.auth.credentials;
+  
+  try {
+    const doctors = await executePrismaMethod(prisma, "doctor", "findMany", {
+      where:{
+        available: true
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        specialty: true
+      }
+    });
+     let AllDoctors: any[] = [];
+    for(const doctor of doctors) {
+      let id = 1;
+      const data = {
+        id:id,
+        doctorId: doctor.id,
+        email: doctor.email,
+        name: doctor.name,
+        specialty: doctor.specialty,
+      }
+      AllDoctors.push(data);
+      id++
+    }
+    logger.info(`Retrieved ${doctors.length} available doctors`, RequestType.READ, name);
+    return h.response(AllDoctors).code(200);
+  } catch (err: any) {
+    logger.error(`Internal Server Error occurred, failed to retrieve available doctors: ${err.toString()}`, RequestType.READ, name);
+    return h.response({ message: "Internal Server Error occurred, failed to retrieve doctors" }).code(500);
+  }
+}
+// admin assign patient to doctor
+export async function adminAssignDoctorToPatientHandler(request: Hapi.Request, h: Hapi.ResponseToolkit) {
+  const { prisma, logger } = request.server.app;
+  const { doctorId, patientId } = request.payload as { doctorId: string, patientId: string };
+  const { name } = request.auth.credentials;
+  
+  try {
+    // Check if doctor exists
+    const doctor = await executePrismaMethod(prisma, "doctor", "findUnique", {
+      where: {
+        id: doctorId
+      }
+    });
+    
+    if (!doctor) {
+      logger.error(`Doctor not found with id ${doctorId}`, RequestType.READ, name);
+      return h.response({ message: "Doctor not found" }).code(404);
+    }
+
+    // Check if patient exists
+    const patientExists = await executePrismaMethod(prisma, "patient", "findUnique", {
+      where: {
+        id: patientId
+      }
+    });
+    
+    if (!patientExists) {
+      logger.error(`Patient not found with id ${patientId}`, RequestType.READ, name);
+      return h.response({ message: "Patient not found" }).code(404);
+    }
+    
+    // Update patient with selected doctor
+    const patient = await executePrismaMethod(prisma, "patient", "update", {
+      where: {
+        id: patientId
+      },
+      data: {
+        doctorId: doctorId,
+        updatedAt: getCurrentDate()
+      }
+    });
+    
+    if (!patient) {
+      logger.error(`Failed to assign doctor to patient ${patientId}`, RequestType.UPDATE, name);
+      return h.response({ message: "Failed to assign doctor" }).code(500);
+    }
+    
+    logger.info(`Admin ${name} assigned doctor ${doctorId} to patient ${patientId}`, RequestType.UPDATE, name);
+    return h.response({ 
+      message: "Doctor assigned successfully",
+      patient: {
+        id: patient.id,
+        name: patient.name,
+        doctorId: patient.doctorId
+      }
+    }).code(200);
+  } catch (err: any) {
+    logger.error(`Internal Server Error occurred, failed to assign doctor: ${err.toString()}`, RequestType.UPDATE, name);
+    return h.response({ message: "Internal Server Error occurred, failed to assign doctor" }).code(500);
   }
 }

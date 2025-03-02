@@ -42,6 +42,10 @@ const doctorInputValidator = joi_1.default.object({
         create: (schema) => schema.optional().allow(),
         update: (schema) => schema.optional().allow(),
     }),
+    available: joi_1.default.boolean().alter({
+        create: (schema) => schema.optional().allow(),
+        update: (schema) => schema.optional().allow(),
+    }),
     id: joi_1.default.string().alter({
         create: (schema) => schema.forbidden(),
         update: (schema) => schema.required(),

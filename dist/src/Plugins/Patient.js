@@ -94,7 +94,28 @@ const patientPlugin = {
                         },
                     }
                 }
-            }
+            },
+            // select a doctor route
+            {
+                method: "POST",
+                path: "/api/v1/Patient/selectDoctor",
+                handler: Handlers_1.assignDoctorToPatientHandler,
+                options: {
+                    pre: [Helpers_1.isUserPatient],
+                    auth: {
+                        mode: "required",
+                        strategy: API_AUTH_STRATEGY
+                    },
+                    validate: {
+                        payload: joi_1.default.object({
+                            doctorId: joi_1.default.string().required()
+                        }),
+                        failAction: (request, h, err) => {
+                            throw err;
+                        }
+                    }
+                }
+            },
         ]);
     }
 };

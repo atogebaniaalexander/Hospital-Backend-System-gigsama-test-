@@ -27,4 +27,5 @@ export interface DoctorModel {
   email: string;
   password: string;
   specialty: string;
+  available: boolean;
 }

@@ -94,6 +94,31 @@ const doctorPlugin = {
                         },
                     }
                 }
+            },
+            // available doctors routes
+            {
+                method: "GET",
+                path: "/api/v1/Doctor/availableDoctors",
+                handler: Handlers_1.getAvailableDoctorsHandler,
+                options: {
+                    auth: {
+                        mode: "required",
+                        strategy: API_AUTH_STRATEGY
+                    }
+                }
+            },
+            // get patients assigned route
+            {
+                method: "GET",
+                path: "/api/v1/Doctor/patients",
+                handler: Handlers_1.getDoctorPatientsHandler,
+                options: {
+                    pre: [Helpers_1.isUserDoctor],
+                    auth: {
+                        mode: "required",
+                        strategy: API_AUTH_STRATEGY
+                    }
+                }
             }
         ]);
     }

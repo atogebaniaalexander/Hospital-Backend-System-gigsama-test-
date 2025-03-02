@@ -3,6 +3,7 @@ import Joi from "joi";
 import dotenv from "dotenv";
 import { adminValidateAPIToken, isUserAdmin } from "../Helpers";
 import { logsHandler } from "../Utils";
+import { adminAssignDoctorToPatientHandler } from "../Handlers";
 
 
 declare module "@hapi/hapi" {
@@ -59,6 +60,28 @@ const adminPlugin: Hapi.Plugin<void> = {
               },
             },
           },
+          // assign patient to a doctor
+          {
+            method: "POST",
+            path: "/api/v1/Admin/assignDoctorToPatient",
+            handler: adminAssignDoctorToPatientHandler,
+            options: {
+              pre: [isUserAdmin],
+              auth: {
+                mode: "required",
+                strategy: API_AUTH_STRATEGY
+              },
+              validate: {
+                payload: Joi.object({
+                  doctorId: Joi.string().required(),
+                  patientId: Joi.string().required()
+                }),
+                failAction: (request, h, err) => {
+                  throw err;
+                }
+              }
+            }
+          }
          ]);
     }
 };

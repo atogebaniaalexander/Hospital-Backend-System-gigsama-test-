@@ -25,6 +25,7 @@ model Doctor {
   specialty String?
   createdAt String
   updatedAt String
+  available Boolean @default(false)
   patients  Patient[]
   notes     Note[]
   reminders Reminder[]

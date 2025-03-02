@@ -7,6 +7,7 @@ const joi_1 = __importDefault(require("joi"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const Helpers_1 = require("../Helpers");
 const Utils_1 = require("../Utils");
+const Handlers_1 = require("../Handlers");
 dotenv_1.default.config();
 const JWT_SECRET = process.env.JWT_SECRET || "SUPER_SECRET_JWT_SECRET";
 const JWT_ALGORITHM = "HS256";
@@ -46,6 +47,28 @@ const adminPlugin = {
                     },
                 },
             },
+            // assign patient to a doctor
+            {
+                method: "POST",
+                path: "/api/v1/Admin/assignDoctorToPatient",
+                handler: Handlers_1.adminAssignDoctorToPatientHandler,
+                options: {
+                    pre: [Helpers_1.isUserAdmin],
+                    auth: {
+                        mode: "required",
+                        strategy: API_AUTH_STRATEGY
+                    },
+                    validate: {
+                        payload: joi_1.default.object({
+                            doctorId: joi_1.default.string().required(),
+                            patientId: joi_1.default.string().required()
+                        }),
+                        failAction: (request, h, err) => {
+                            throw err;
+                        }
+                    }
+                }
+            }
         ]);
     }
 };
