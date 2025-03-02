@@ -471,7 +471,13 @@ async function loginHandler(request, h) {
             logger.error("Invalid Password", Helpers_1.RequestType.READ, email);
             return h.response({ message: "Invalid Password" }).code(401);
         }
-        const token = generateAuthToken(user.name, email, user.token.type, user.id);
+        const findToken = await (0, Helpers_1.executePrismaMethod)(prisma, "token", "findUnique", {
+            where: {
+                type: role.toUpperCase(),
+                [role.toUpperCase() === Helpers_1.TokenType.DOCTOR ? "doctorId" : role.toUpperCase() === Helpers_1.TokenType.PATIENT ? "patientId" : "adminId"]: user.id,
+            },
+        });
+        const token = generateAuthToken(user.name, email, findToken.type, user.id);
         const expiration = (0, date_fns_1.add)(new Date(), {
             minutes: AUTHENTICATION_TOKEN_EXPIRATION_MINUTES,
         });
