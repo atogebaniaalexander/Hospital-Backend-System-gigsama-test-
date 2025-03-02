@@ -3,7 +3,7 @@ import Joi from "joi";
 import dotenv from "dotenv";
 import { adminValidateAPIToken, isUserAdmin } from "../Helpers";
 import { logsHandler } from "../Utils";
-import { adminAssignDoctorToPatientHandler } from "../Handlers";
+import { adminAssignDoctorToPatientHandler, loginHandler, logoutHandler } from "../Handlers";
 
 
 declare module "@hapi/hapi" {
@@ -79,6 +79,45 @@ const adminPlugin: Hapi.Plugin<void> = {
                 failAction: (request, h, err) => {
                   throw err;
                 }
+              }
+            }
+          },
+          {
+            // default status endpoint
+            method: "GET",
+            path: "/api/v1/",
+            handler: (_, h: Hapi.ResponseToolkit) =>
+              h.response({ up: true }).code(200),
+            options: {
+              auth: false,
+            },
+          },
+          {
+            method: "POST",
+            path: "/api/v1/login",
+            handler: loginHandler,
+            options: {
+              auth: false,
+              validate: {
+                payload: Joi.object({
+                  email: Joi.string().email().required(),
+                  password: Joi.string().required(),
+                  role: Joi.string().valid("patient", "doctor","admin").required(),
+                }),
+                failAction: (request, h, err) => {
+                  throw err;
+                },
+              },
+            },
+          },
+          {
+            method: "GET",
+            path: "/api/v1/logout",
+            handler:logoutHandler,
+            options:{
+              auth:{
+                mode:"required",
+                strategy: API_AUTH_STRATEGY
               }
             }
           }

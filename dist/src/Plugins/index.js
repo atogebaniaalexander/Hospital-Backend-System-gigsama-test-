@@ -20,5 +20,4 @@ __exportStar(require("./Doctor"), exports);
 __exportStar(require("./Patient"), exports);
 __exportStar(require("./Notes"), exports);
 __exportStar(require("./pm2"), exports);
-__exportStar(require("./status"), exports);
 //# sourceMappingURL=index.js.map

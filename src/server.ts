@@ -5,11 +5,10 @@ import { RequestType } from "./Helpers";
 import hapiAuthJwt2 from "hapi-auth-jwt2";
 import prismaPlugin  from "./Plugins/prisma";
 import pm2plugin from "./Plugins/pm2";
-import statusPlugin from "./Plugins/status";
 import adminPlugin from "./Plugins/Admin";
 import doctorPlugin from "./Plugins/Doctor";
 import patientPlugin from "./Plugins/Patient";
-import notesPlugin from "./Plugins/Notes";
+
 
 
 declare module "@hapi/hapi" {
@@ -46,11 +45,10 @@ export async function createServer(): Promise<Hapi.Server> {
     { plugin: pm2plugin },
     { plugin: hapiAuthJwt2 },
     { plugin: prismaPlugin },
-    { plugin: statusPlugin },
     { plugin: adminPlugin },
     { plugin: doctorPlugin },
     { plugin: patientPlugin },
-    { plugin: notesPlugin },
+
   ];
 
   await server.register(plugins);
