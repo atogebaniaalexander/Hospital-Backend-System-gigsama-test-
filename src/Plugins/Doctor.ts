@@ -2,8 +2,8 @@ import Hapi from "@hapi/hapi";
 import Joi from "joi";
 import dotenv from "dotenv";
 import { doctorValidateAPIToken, isDoctorOrAdmin, isUserAdmin, isUserDoctor } from "../Helpers";
-import { createDoctorHandler, deleteDoctorHandler, listDoctorsHandler } from "../Handlers";
-import { createDoctorInputValidator } from "../Validators";
+import { createDoctorHandler, deleteDoctorHandler, listDoctorsHandler, updateDoctorHandler } from "../Handlers";
+import { createDoctorInputValidator, updateDoctorInputValidator } from "../Validators";
 
 declare module "@hapi/hapi" {
   export interface AuthCredentials {
@@ -42,11 +42,7 @@ const doctorPlugin: Hapi.Plugin<void> = {
              path: "/api/v1/Doctor/create",
              handler: createDoctorHandler,
              options: {
-               pre: [isUserDoctor],
-               auth: {
-                 mode: "required",
-                 strategy: API_AUTH_STRATEGY
-               },
+               auth: false,
                validate: {
                  payload: createDoctorInputValidator,
                  failAction: (request, h, err) => {
@@ -64,6 +60,28 @@ const doctorPlugin: Hapi.Plugin<void> = {
               auth:{
                 mode:"required",
                 strategy: API_AUTH_STRATEGY
+              }
+            }
+           },
+           // update Doctor route
+           {
+            method: "PUT",
+            path: "/api/v1/Doctor/{doctorId}",
+            handler: updateDoctorHandler,
+            options:{
+              pre:[isDoctorOrAdmin],
+              auth:{
+                mode: "required",
+                strategy: API_AUTH_STRATEGY
+              },
+              validate:{
+                params: Joi.object({
+                  doctorId: Joi.string().required(),
+                }),
+                payload: updateDoctorInputValidator,
+                failAction: (request, h, err) => {
+                  throw err;
+                },
               }
             }
            },

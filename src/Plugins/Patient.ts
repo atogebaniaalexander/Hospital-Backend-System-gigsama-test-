@@ -2,8 +2,8 @@ import Hapi from "@hapi/hapi";
 import Joi from "joi";
 import dotenv from "dotenv";
 import { isPatientOrAdmin, isUserPatient, patientValidateAPIToken } from "../Helpers";
-import { createPatientHandler, deletePatientHandler, listPatientHandler } from "../Handlers";
-import { createPatientInputValidator } from "../Validators";
+import { createPatientHandler, deletePatientHandler, listPatientHandler, updatePatientHandler } from "../Handlers";
+import { createPatientInputValidator, updatePatientInputValidator } from "../Validators";
 
 declare module "@hapi/hapi" {
   export interface AuthCredentials {
@@ -43,11 +43,7 @@ const patientPlugin: Hapi.Plugin<void> = {
               path: "/api/v1/Patient/create",
               handler: createPatientHandler,
               options: {
-                pre: [isUserPatient],
-                  auth: {
-                    mode: "required",
-                    strategy: API_AUTH_STRATEGY
-                  },
+                  auth: false,
                   validate: {
                     payload: createPatientInputValidator,
                       failAction: (request, h, err) => {
@@ -67,7 +63,29 @@ const patientPlugin: Hapi.Plugin<void> = {
                         strategy: API_AUTH_STRATEGY
                       }
                     }
-            },                                
+            },    
+            //update patient route
+            {
+              method: "PUT",
+              path: "/api/v1/Patient/{patientId}",
+              handler: updatePatientHandler,
+              options:{
+                pre:[isPatientOrAdmin],
+                auth:{
+                  mode: "required",
+                  strategy: API_AUTH_STRATEGY
+                },
+                validate:{
+                  params: Joi.object({
+                    patientId: Joi.string().required(),
+                  }),
+                  payload: updatePatientInputValidator,
+                  failAction: (request, h, err) => {
+                    throw err;
+                  },
+                }
+              }
+            },                            
             //delete patient route
             {
                   method: "DELETE",

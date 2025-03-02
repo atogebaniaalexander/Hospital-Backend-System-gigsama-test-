@@ -5,10 +5,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createDoctorHandler = createDoctorHandler;
 exports.listDoctorsHandler = listDoctorsHandler;
+exports.updateDoctorHandler = updateDoctorHandler;
 exports.deleteDoctorHandler = deleteDoctorHandler;
 exports.createPatientHandler = createPatientHandler;
 exports.listPatientHandler = listPatientHandler;
+exports.updatePatientHandler = updatePatientHandler;
 exports.deletePatientHandler = deletePatientHandler;
+exports.loginHandler = loginHandler;
+exports.logoutHandler = logoutHandler;
 const dotenv_1 = __importDefault(require("dotenv"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
@@ -38,6 +42,7 @@ function decodeAuthToken(token) {
     }
 }
 /** DOCTOR Handlers */
+// create a doctor
 async function createDoctorHandler(request, h) {
     const { prisma, logger } = request.server.app;
     const { email, name, password, specialty } = request.payload;
@@ -101,6 +106,7 @@ async function createDoctorHandler(request, h) {
             .code(500);
     }
 }
+// list all doctors
 async function listDoctorsHandler(request, h) {
     const { prisma, logger } = request.server.app;
     const { name } = request.auth.credentials;
@@ -118,6 +124,46 @@ async function listDoctorsHandler(request, h) {
         return h.response({ message: "Internal Server Error occurred, failed to fetch Doctors" }).code(500);
     }
 }
+// update a doctor
+async function updateDoctorHandler(request, h) {
+    const { prisma, logger } = request.server.app;
+    const { doctorId } = request.params;
+    const { name, email, specialty } = request.payload;
+    const credentials = request.auth.credentials;
+    try {
+        const checkIfUserExist = await (0, Helpers_1.executePrismaMethod)(prisma, "doctor", "findFirst", {
+            where: {
+                id: doctorId,
+                email: email,
+            }
+        });
+        if (!checkIfUserExist) {
+            logger.error("Doctor not found", Helpers_1.RequestType.READ, name);
+            return h.response({ message: "Doctor not found" }).code(404);
+        }
+        const Doctor = await (0, Helpers_1.executePrismaMethod)(prisma, "doctor", "update", {
+            where: {
+                id: checkIfUserExist.id,
+            },
+            data: {
+                name: name,
+                specialty: specialty,
+                updatedAt: (0, Helpers_1.getCurrentDate)(),
+            }
+        });
+        if (!Doctor) {
+            logger.error("Failed to update Doctor", Helpers_1.RequestType.UPDATE, credentials.name);
+            return h.response({ message: "Failed to update Doctor" }).code(404);
+        }
+        logger.info("Doctor updated Successfully", Helpers_1.RequestType.UPDATE, credentials.name);
+        return h.response({ message: "Doctor updated Successfully" }).code(201);
+    }
+    catch (err) {
+        logger.error("Internal Server Error occurred, failed to update Doctor", Helpers_1.RequestType.UPDATE, credentials.name, err.toString());
+        return h.response({ message: "Internal Server Error occurred, failed to update Doctor" }).code(500);
+    }
+}
+// delete a doctor
 async function deleteDoctorHandler(request, h) {
     const { prisma, logger } = request.server.app;
     const { doctorId } = request.params;
@@ -141,6 +187,7 @@ async function deleteDoctorHandler(request, h) {
     }
 }
 /** PATIENT Handlers */
+// create a patient
 async function createPatientHandler(request, h) {
     const { prisma, logger } = request.server.app;
     const { email, name, password } = request.payload;
@@ -207,6 +254,7 @@ async function createPatientHandler(request, h) {
             .code(500);
     }
 }
+// list all patients
 async function listPatientHandler(request, h) {
     const { prisma, logger } = request.server.app;
     const { name } = request.auth.credentials;
@@ -224,6 +272,45 @@ async function listPatientHandler(request, h) {
         return h.response({ message: "Internal Server Error occurred, failed to fetch Patients" }).code(500);
     }
 }
+// update a patient
+async function updatePatientHandler(request, h) {
+    const { prisma, logger } = request.server.app;
+    const { patientId } = request.params;
+    const { name, email } = request.payload;
+    const credentials = request.auth.credentials;
+    try {
+        const checkIfUserExist = await (0, Helpers_1.executePrismaMethod)(prisma, "patient", "findFirst", {
+            where: {
+                id: patientId,
+                email: email,
+            }
+        });
+        if (!checkIfUserExist) {
+            logger.error("Patient not found", Helpers_1.RequestType.READ, name);
+            return h.response({ message: "Patient not found" }).code(404);
+        }
+        const Patient = await (0, Helpers_1.executePrismaMethod)(prisma, "patient", "update", {
+            where: {
+                id: checkIfUserExist.id,
+            },
+            data: {
+                name: name,
+                updatedAt: (0, Helpers_1.getCurrentDate)(),
+            }
+        });
+        if (!Patient) {
+            logger.error("Failed to update Patient", Helpers_1.RequestType.UPDATE, credentials.name);
+            return h.response({ message: "Failed to update Patient" }).code(404);
+        }
+        logger.info("Patient updated Successfully", Helpers_1.RequestType.UPDATE, credentials.name);
+        return h.response({ message: "Patient updated Successfully" }).code(201);
+    }
+    catch (err) {
+        logger.error("Internal Server Error occurred, failed to update Patient", Helpers_1.RequestType.UPDATE, credentials.name, err.toString());
+        return h.response({ message: "Internal Server Error occurred, failed to update Patient" }).code(500);
+    }
+}
+// update a patient
 async function deletePatientHandler(request, h) {
     const { prisma, logger } = request.server.app;
     const { patientId } = request.params;
@@ -244,6 +331,118 @@ async function deletePatientHandler(request, h) {
     catch (err) {
         logger.error("Internal Server Error occurred, failed to delete Patient", Helpers_1.RequestType.DELETE, name, err.toString());
         return h.response({ message: "Internal Server Error occurred, failed to delete Patient" }).code(500);
+    }
+}
+/** General  */
+//login payload
+var Role;
+(function (Role) {
+    Role["DOCTOR"] = "doctor";
+    Role["PATIENT"] = "patient";
+    Role["ADMIN"] = "admin";
+})(Role || (Role = {}));
+async function loginHandler(request, h) {
+    const { prisma, logger } = request.server.app;
+    const { email, password, role } = request.payload;
+    try {
+        let user;
+        if (role === Role.DOCTOR) {
+            user = await (0, Helpers_1.executePrismaMethod)(prisma, "doctor", "findUnique", {
+                where: {
+                    email: email,
+                },
+            });
+        }
+        else if (role === Role.PATIENT) {
+            user = await (0, Helpers_1.executePrismaMethod)(prisma, "patient", "findUnique", {
+                where: {
+                    email: email,
+                },
+            });
+        }
+        else if (role === Role.ADMIN) {
+            user = await (0, Helpers_1.executePrismaMethod)(prisma, "admin", "findUnique", {
+                where: {
+                    email: email,
+                },
+            });
+        }
+        else {
+            logger.error("Invalid Role", Helpers_1.RequestType.READ, email);
+            return h.response({ message: "Invalid Role" }).code(400);
+        }
+        if (!user) {
+            logger.error("User not found", Helpers_1.RequestType.READ, email);
+            return h.response({ message: "User not found" }).code(404);
+        }
+        const isPasswordValid = await bcryptjs_1.default.compare(password, user.password);
+        if (!isPasswordValid) {
+            logger.error("Invalid Password", Helpers_1.RequestType.READ, email);
+            return h.response({ message: "Invalid Password" }).code(401);
+        }
+        const token = generateAuthToken(user.name, email, user.token.type, user.id);
+        const expiration = (0, date_fns_1.add)(new Date(), {
+            minutes: AUTHENTICATION_TOKEN_EXPIRATION_MINUTES,
+        });
+        const Token = await (0, Helpers_1.executePrismaMethod)(prisma, "token", "update", {
+            where: {
+                type: role,
+                token: user.token.token,
+            },
+            data: {
+                valid: true,
+                expiration: expiration,
+                Token: token,
+                updatedAt: (0, Helpers_1.getCurrentDate)(),
+                doctorId: role === Role.DOCTOR ? user.id : null,
+                patientId: role === Role.PATIENT ? user.id : null,
+                adminId: role === Role.ADMIN ? user.id : null,
+            },
+        });
+        if (!Token) {
+            logger.error("Failed to create Token", Helpers_1.RequestType.CREATE, email, Token.toString());
+            return h.response({ message: "Failed to create Token" }).code(404);
+        }
+        logger.info("User logged in successfully", Helpers_1.RequestType.READ, email);
+        return h.response({ token }).header('Authorization', `Bearer ${token}`).code(200);
+    }
+    catch (err) {
+        logger.error("Internal Server Error occurred, failed to login", Helpers_1.RequestType.READ, email, err.toString());
+        return h.response({ message: "Internal Server Error occurred, failed to login" }).code(500);
+    }
+}
+async function logoutHandler(request, h) {
+    const { prisma, logger } = request.server.app;
+    const { tokenId, name } = request.auth.credentials;
+    try {
+        const checkIfTokenExist = await (0, Helpers_1.executePrismaMethod)(prisma, "token", "findUnique", {
+            where: {
+                id: tokenId,
+            },
+        });
+        if (!checkIfTokenExist) {
+            logger.error("Token not found", Helpers_1.RequestType.READ, name);
+            return h.response({ message: "Token not found" }).code(404);
+        }
+        const Token = await (0, Helpers_1.executePrismaMethod)(prisma, "token", "update", {
+            where: {
+                id: tokenId,
+            },
+            data: {
+                valid: false,
+                updatedAt: (0, Helpers_1.getCurrentDate)(),
+            },
+        });
+        if (!Token) {
+            logger.error("Failed to logout", Helpers_1.RequestType.UPDATE, name);
+            return h.response({ message: "Failed to logout" }).code(404);
+        }
+        logger.info("User logged out successfully", Helpers_1.RequestType.UPDATE, name);
+        return h.response({ message: "User logged out successfully" }).code(200);
+    }
+    catch (err) {
+        logger.error("Internal Server Error occurred, failed to logout", Helpers_1.RequestType.UPDATE, name, err.toString());
+        return h.response({ message: "Internal Server Error occurred, failed to logout" }).code(500);
     }
 }
 //# sourceMappingURL=userManagement.js.map

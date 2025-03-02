@@ -46,6 +46,7 @@ function decodeAuthToken(token: string){
 
 
 /** DOCTOR Handlers */
+// create a doctor
 export async function createDoctorHandler(request:Hapi.Request,h: Hapi.ResponseToolkit){
     const { prisma, logger} = request.server.app;
     const { email, name, password, specialty } = request.payload as DoctorModel;
@@ -149,6 +150,7 @@ export async function createDoctorHandler(request:Hapi.Request,h: Hapi.ResponseT
           .code(500);
     }
 }
+// list all doctors
 export async function listDoctorsHandler(request:Hapi.Request, h:Hapi.ResponseToolkit){
   const {prisma, logger} = request.server.app;
   const {name} = request.auth.credentials;
@@ -170,7 +172,49 @@ export async function listDoctorsHandler(request:Hapi.Request, h:Hapi.ResponseTo
   }
 
 }
+// update a doctor
+export async function updateDoctorHandler(request:Hapi.Request,h:Hapi.ResponseToolkit){
+  const { prisma,logger} = request.server.app;
+  const { doctorId } = request.params;
+  const { name, email, specialty } = request.payload as DoctorModel;
+  const credentials = request.auth.credentials;
 
+  try{
+    const checkIfUserExist = await executePrismaMethod(prisma,"doctor","findFirst",{
+      where:{
+        id: doctorId,
+        email: email,
+      }
+    });
+    if(!checkIfUserExist){
+      logger.error("Doctor not found",RequestType.READ,name);
+      return h.response({message: "Doctor not found"}).code(404);
+    }
+    const Doctor = await executePrismaMethod(prisma,"doctor","update",{
+      where:{
+        id: checkIfUserExist.id,
+      },
+      data:{
+        name: name,
+        specialty: specialty,
+        updatedAt: getCurrentDate(),
+      }
+    });
+
+    if(!Doctor){
+      logger.error("Failed to update Doctor",RequestType.UPDATE,credentials.name);
+      return h.response({message: "Failed to update Doctor"}).code(404);
+    }
+
+    logger.info("Doctor updated Successfully",RequestType.UPDATE,credentials.name);
+    return h.response({message: "Doctor updated Successfully"}).code(201);
+
+  }catch(err:any){
+      logger.error("Internal Server Error occurred, failed to update Doctor",RequestType.UPDATE,credentials.name,err.toString());
+      return h.response({message: "Internal Server Error occurred, failed to update Doctor"}).code(500);
+  }
+}
+// delete a doctor
 export async function deleteDoctorHandler(request: Hapi.Request,h:Hapi.ResponseToolkit){
   const { prisma,logger} = request.server.app;
   const { doctorId } = request.params;
@@ -198,6 +242,7 @@ export async function deleteDoctorHandler(request: Hapi.Request,h:Hapi.ResponseT
 }
 
 /** PATIENT Handlers */
+// create a patient
 export async function createPatientHandler(
   request: Hapi.Request,
   h: Hapi.ResponseToolkit
@@ -304,7 +349,7 @@ export async function createPatientHandler(
       .code(500);
   }
 }
-
+// list all patients
 export async function listPatientHandler(request:Hapi.Request,h:Hapi.ResponseToolkit){
   const {prisma, logger} = request.server.app;
   const {name} = request.auth.credentials;
@@ -325,7 +370,48 @@ export async function listPatientHandler(request:Hapi.Request,h:Hapi.ResponseToo
     return h.response({message: "Internal Server Error occurred, failed to fetch Patients"}).code(500);
   }
 }
+// update a patient
+export async function updatePatientHandler(request:Hapi.Request,h:Hapi.ResponseToolkit){
+  const { prisma,logger} = request.server.app;
+  const { patientId } = request.params;
+  const { name, email } = request.payload as PatientModel;
+  const credentials = request.auth.credentials;
 
+  try{
+    const checkIfUserExist = await executePrismaMethod(prisma,"patient","findFirst",{
+      where:{
+        id: patientId,
+        email: email,
+      }
+    });
+    if(!checkIfUserExist){
+      logger.error("Patient not found",RequestType.READ,name);
+      return h.response({message: "Patient not found"}).code(404);
+    }
+    const Patient = await executePrismaMethod(prisma,"patient","update",{
+      where:{
+        id: checkIfUserExist.id,
+      },
+      data:{
+        name: name,
+        updatedAt: getCurrentDate(),
+      }
+    });
+
+    if(!Patient){
+      logger.error("Failed to update Patient",RequestType.UPDATE,credentials.name);
+      return h.response({message: "Failed to update Patient"}).code(404);
+    }
+
+    logger.info("Patient updated Successfully",RequestType.UPDATE,credentials.name);
+    return h.response({message: "Patient updated Successfully"}).code(201);
+
+  }catch(err:any){
+      logger.error("Internal Server Error occurred, failed to update Patient",RequestType.UPDATE,credentials.name,err.toString());
+      return h.response({message: "Internal Server Error occurred, failed to update Patient"}).code(500);
+  }
+}
+// update a patient
 export async function deletePatientHandler(request: Hapi.Request,h:Hapi.ResponseToolkit){
   const { prisma,logger} = request.server.app;
   const { patientId } = request.params;
@@ -352,4 +438,134 @@ export async function deletePatientHandler(request: Hapi.Request,h:Hapi.Response
   }
 }
 
+/** General  */
 
+//login payload
+enum Role {
+  DOCTOR = "doctor",
+  PATIENT = "patient",
+  ADMIN = "admin",
+}
+interface LoginPayload {
+  email: string;
+  password: string;
+  role: Role;
+}
+
+export async function loginHandler(request: Hapi.Request, h: Hapi.ResponseToolkit) {
+  const { prisma, logger } = request.server.app;
+  const { email, password, role } = request.payload as LoginPayload;
+
+  try {
+    let user;
+    if (role === Role.DOCTOR) {
+      user = await executePrismaMethod(prisma, "doctor", "findUnique", {
+        where: {
+          email: email,
+        },
+      });
+    } else if (role === Role.PATIENT) {
+      user = await executePrismaMethod(prisma, "patient", "findUnique", {
+        where: {
+          email: email,
+        },
+      });
+    } else if (role === Role.ADMIN) {
+      user = await executePrismaMethod(prisma, "admin", "findUnique", {
+        where: {
+          email: email,
+        },
+      });
+    }else {
+      logger.error("Invalid Role", RequestType.READ,email);
+      return h.response({ message: "Invalid Role" }).code(400);
+    }
+
+    if (!user) {
+      logger.error("User not found", RequestType.READ, email);
+      return h.response({ message: "User not found" }).code(404);
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      logger.error("Invalid Password", RequestType.READ, email);
+      return h.response({ message: "Invalid Password" }).code(401);
+    }
+
+    const token = generateAuthToken(user.name, email, user.token.type, user.id);
+
+    const expiration = add(new Date(), {
+      minutes: AUTHENTICATION_TOKEN_EXPIRATION_MINUTES,
+    });
+
+    const Token = await executePrismaMethod(prisma, "token", "update", {
+      where:{
+        type: role,
+        token: user.token.token,
+      },
+      data: {
+        valid: true,
+        expiration: expiration,
+        Token: token,
+        updatedAt: getCurrentDate(),
+        doctorId: role === Role.DOCTOR ? user.id : null,
+        patientId: role === Role.PATIENT ? user.id : null,
+        adminId: role === Role.ADMIN ? user.id : null,
+      },
+    });
+    if (!Token) {
+      logger.error(
+        "Failed to create Token",
+        RequestType.CREATE,
+        email,
+        Token.toString()
+      );
+      return h.response({ message: "Failed to create Token" }).code(404);
+    }
+
+    logger.info("User logged in successfully", RequestType.READ, email);
+    return h.response({ token }).header('Authorization', `Bearer ${token}`).code(200);
+  } catch (err: any){
+    logger.error("Internal Server Error occurred, failed to login", RequestType.READ, email, err.toString());
+    return h.response({ message: "Internal Server Error occurred, failed to login" }).code(500);
+  }
+}
+
+export async function logoutHandler(request: Hapi.Request, h: Hapi.ResponseToolkit) {
+  const { prisma, logger } = request.server.app;
+  const { tokenId,name } = request.auth.credentials;
+
+  try {
+    const checkIfTokenExist = await executePrismaMethod(prisma, "token", "findUnique", {
+      where: {
+        id: tokenId,
+      },
+    });
+
+    if (!checkIfTokenExist) {
+      logger.error("Token not found", RequestType.READ, name);
+      return h.response({ message: "Token not found" }).code(404);
+    }
+
+    const Token = await executePrismaMethod(prisma, "token", "update", {
+      where: {
+        id: tokenId,
+      },
+      data: {
+        valid: false,
+        updatedAt: getCurrentDate(),
+      },
+    });
+
+    if (!Token) {
+      logger.error("Failed to logout", RequestType.UPDATE, name);
+      return h.response({ message: "Failed to logout" }).code(404);
+    }
+
+    logger.info("User logged out successfully", RequestType.UPDATE, name);
+    return h.response({ message: "User logged out successfully" }).code(200);
+  } catch (err: any) {
+    logger.error("Internal Server Error occurred, failed to logout", RequestType.UPDATE, name, err.toString());
+    return h.response({ message: "Internal Server Error occurred, failed to logout" }).code(500);
+  }
+}

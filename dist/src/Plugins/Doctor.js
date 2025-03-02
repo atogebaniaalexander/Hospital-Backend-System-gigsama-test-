@@ -31,11 +31,7 @@ const doctorPlugin = {
                 path: "/api/v1/Doctor/create",
                 handler: Handlers_1.createDoctorHandler,
                 options: {
-                    pre: [Helpers_1.isUserDoctor],
-                    auth: {
-                        mode: "required",
-                        strategy: API_AUTH_STRATEGY
-                    },
+                    auth: false,
                     validate: {
                         payload: Validators_1.createDoctorInputValidator,
                         failAction: (request, h, err) => {
@@ -53,6 +49,28 @@ const doctorPlugin = {
                     auth: {
                         mode: "required",
                         strategy: API_AUTH_STRATEGY
+                    }
+                }
+            },
+            // update Doctor route
+            {
+                method: "PUT",
+                path: "/api/v1/Doctor/{doctorId}",
+                handler: Handlers_1.updateDoctorHandler,
+                options: {
+                    pre: [Helpers_1.isDoctorOrAdmin],
+                    auth: {
+                        mode: "required",
+                        strategy: API_AUTH_STRATEGY
+                    },
+                    validate: {
+                        params: joi_1.default.object({
+                            doctorId: joi_1.default.string().required(),
+                        }),
+                        payload: Validators_1.updateDoctorInputValidator,
+                        failAction: (request, h, err) => {
+                            throw err;
+                        },
                     }
                 }
             },

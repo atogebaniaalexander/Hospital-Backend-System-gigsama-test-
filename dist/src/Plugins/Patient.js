@@ -31,11 +31,7 @@ const patientPlugin = {
                 path: "/api/v1/Patient/create",
                 handler: Handlers_1.createPatientHandler,
                 options: {
-                    pre: [Helpers_1.isUserPatient],
-                    auth: {
-                        mode: "required",
-                        strategy: API_AUTH_STRATEGY
-                    },
+                    auth: false,
                     validate: {
                         payload: Validators_1.createPatientInputValidator,
                         failAction: (request, h, err) => {
@@ -53,6 +49,28 @@ const patientPlugin = {
                     auth: {
                         mode: "required",
                         strategy: API_AUTH_STRATEGY
+                    }
+                }
+            },
+            //update patient route
+            {
+                method: "PUT",
+                path: "/api/v1/Patient/{patientId}",
+                handler: Handlers_1.updatePatientHandler,
+                options: {
+                    pre: [Helpers_1.isPatientOrAdmin],
+                    auth: {
+                        mode: "required",
+                        strategy: API_AUTH_STRATEGY
+                    },
+                    validate: {
+                        params: joi_1.default.object({
+                            patientId: joi_1.default.string().required(),
+                        }),
+                        payload: Validators_1.updatePatientInputValidator,
+                        failAction: (request, h, err) => {
+                            throw err;
+                        },
                     }
                 }
             },

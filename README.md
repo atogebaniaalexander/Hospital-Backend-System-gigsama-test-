@@ -1,5 +1,14 @@
 # API Documentation
-
+//
+1. HTTPS implementation
+2. Error handling
+3. API versioning
+4. Pagination
+5. Rate limiting
+6. Consistent naming
+7. Documentation
+8. Caching strategy
+//
 ## Overview
 This document provides an overview of the API endpoints available in the hospital backend system. It includes details on user management, patient-doctor assignments, doctor note submissions, and actionable steps scheduling.
 
