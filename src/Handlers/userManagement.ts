@@ -592,17 +592,14 @@ export async function loginHandler(request: Hapi.Request, h: Hapi.ResponseToolki
 
     const Token = await executePrismaMethod(prisma, "token", "update", {
       where:{
-        type: role,
-        token: user.token.token,
+        type: role.toUpperCase(),
+        [role.toUpperCase() === TokenType.DOCTOR ? "doctorId" : role.toUpperCase() === TokenType.PATIENT ? "patientId" : "adminId"]: user.id,
       },
       data: {
         valid: true,
         expiration: expiration,
         Token: token,
         updatedAt: getCurrentDate(),
-        doctorId: role === Role.DOCTOR ? user.id : null,
-        patientId: role === Role.PATIENT ? user.id : null,
-        adminId: role === Role.ADMIN ? user.id : null,
       },
     });
     if (!Token) {

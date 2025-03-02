@@ -483,17 +483,14 @@ async function loginHandler(request, h) {
         });
         const Token = await (0, Helpers_1.executePrismaMethod)(prisma, "token", "update", {
             where: {
-                type: role,
-                token: user.token.token,
+                type: role.toUpperCase(),
+                [role.toUpperCase() === Helpers_1.TokenType.DOCTOR ? "doctorId" : role.toUpperCase() === Helpers_1.TokenType.PATIENT ? "patientId" : "adminId"]: user.id,
             },
             data: {
                 valid: true,
                 expiration: expiration,
                 Token: token,
                 updatedAt: (0, Helpers_1.getCurrentDate)(),
-                doctorId: role === Role.DOCTOR ? user.id : null,
-                patientId: role === Role.PATIENT ? user.id : null,
-                adminId: role === Role.ADMIN ? user.id : null,
             },
         });
         if (!Token) {
