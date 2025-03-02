@@ -50,10 +50,10 @@ function decodeAuthToken(token) {
 // create a doctor
 async function createDoctorHandler(request, h) {
     const { prisma, logger } = request.server.app;
-    const { email, name, password, specialty } = request.payload;
+    const { email, name, password, specialty, available } = request.payload;
     const credentials = request.auth.credentials;
     try {
-        const checkIfUserExist = await (0, Helpers_1.executePrismaMethod)(prisma, "doctor", "findUnique", {
+        const checkIfUserExist = await (0, Helpers_1.executePrismaMethod)(prisma, "doctor", "findFirst", {
             where: {
                 email: email,
                 name: name,
@@ -71,6 +71,7 @@ async function createDoctorHandler(request, h) {
                 name: name,
                 password: hashPassword,
                 specialty: specialty,
+                available: available || false,
                 createdAt: (0, Helpers_1.getCurrentDate)(),
                 updatedAt: (0, Helpers_1.getCurrentDate)(),
             },

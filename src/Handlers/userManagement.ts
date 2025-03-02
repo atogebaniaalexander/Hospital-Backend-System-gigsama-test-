@@ -48,14 +48,14 @@ export function decodeAuthToken(token: string){
 // create a doctor
 export async function createDoctorHandler(request:Hapi.Request,h: Hapi.ResponseToolkit){
     const { prisma, logger} = request.server.app;
-    const { email, name, password, specialty } = request.payload as DoctorModel;
+    const { email, name, password, specialty, available } = request.payload as DoctorModel;
     const credentials  = request.auth.credentials;
 
     try{
          const checkIfUserExist = await executePrismaMethod(
            prisma,
            "doctor",
-           "findUnique",
+           "findFirst",
            {
              where: {
                email: email,
@@ -82,6 +82,7 @@ export async function createDoctorHandler(request:Hapi.Request,h: Hapi.ResponseT
             name: name,
             password: hashPassword,
             specialty: specialty,
+            available: available || false,
             createdAt: getCurrentDate(),
             updatedAt: getCurrentDate(),
           },
