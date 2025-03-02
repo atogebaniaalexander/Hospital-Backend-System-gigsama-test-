@@ -625,11 +625,13 @@ export async function logoutHandler(request: Hapi.Request, h: Hapi.ResponseToolk
   const { tokenId,name } = request.auth.credentials;
 
   try {
+
     const checkIfTokenExist = await executePrismaMethod(prisma, "token", "findUnique", {
       where: {
         id: tokenId,
       },
     });
+    console.log("token is vallid: ",checkIfTokenExist);
 
     if (!checkIfTokenExist) {
       logger.error("Token not found", RequestType.READ, name);
@@ -645,6 +647,8 @@ export async function logoutHandler(request: Hapi.Request, h: Hapi.ResponseToolk
         updatedAt: getCurrentDate(),
       },
     });
+
+    console.log("Token updated",Token);
 
     if (!Token) {
       logger.error("Failed to logout", RequestType.UPDATE, name);

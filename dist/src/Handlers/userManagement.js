@@ -514,6 +514,7 @@ async function logoutHandler(request, h) {
                 id: tokenId,
             },
         });
+        console.log("token is vallid: ", checkIfTokenExist);
         if (!checkIfTokenExist) {
             logger.error("Token not found", Helpers_1.RequestType.READ, name);
             return h.response({ message: "Token not found" }).code(404);
@@ -527,6 +528,7 @@ async function logoutHandler(request, h) {
                 updatedAt: (0, Helpers_1.getCurrentDate)(),
             },
         });
+        console.log("Token updated", Token);
         if (!Token) {
             logger.error("Failed to logout", Helpers_1.RequestType.UPDATE, name);
             return h.response({ message: "Failed to logout" }).code(404);
