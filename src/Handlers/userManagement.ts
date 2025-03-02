@@ -154,6 +154,7 @@ export async function listDoctorsHandler(request:Hapi.Request, h:Hapi.ResponseTo
   const {name} = request.auth.credentials;
 
   try{
+    console.log("starting...")
     const doctors = await executePrismaMethod(prisma,"doctor","findMany",{
       select: {
         id: true,
@@ -170,7 +171,7 @@ export async function listDoctorsHandler(request:Hapi.Request, h:Hapi.ResponseTo
       logger.error("Failed to fetch Doctors",RequestType.READ,name);
       return h.response({message: "Failed to fetch Doctors"}).code(404);
     }
-
+    console.log("doctors available")
     let AllDoctors: any[] = [];
     for(const doctor of doctors) {
       let status = "Unavailable";

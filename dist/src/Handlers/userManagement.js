@@ -115,6 +115,7 @@ async function listDoctorsHandler(request, h) {
     const { prisma, logger } = request.server.app;
     const { name } = request.auth.credentials;
     try {
+        console.log("starting...");
         const doctors = await (0, Helpers_1.executePrismaMethod)(prisma, "doctor", "findMany", {
             select: {
                 id: true,
@@ -130,6 +131,7 @@ async function listDoctorsHandler(request, h) {
             logger.error("Failed to fetch Doctors", Helpers_1.RequestType.READ, name);
             return h.response({ message: "Failed to fetch Doctors" }).code(404);
         }
+        console.log("doctors available");
         let AllDoctors = [];
         for (const doctor of doctors) {
             let status = "Unavailable";
