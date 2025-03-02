@@ -27,8 +27,8 @@ dotenv_1.default.config();
 const JWT_SECRET = process.env.JWT_SECRET || "SUPER_SECRET_JWT_SECRET";
 const JWT_ALGORITHM = "HS256";
 const AUTHENTICATION_TOKEN_EXPIRATION_MINUTES = 720;
-function generateAuthToken(name, email, tokenType, userId) {
-    const jwtPayload = { name, email, tokenType, userId };
+function generateAuthToken(name, email, tokenType, userId, userType) {
+    const jwtPayload = { name, email, tokenType, userId, userType };
     return jsonwebtoken_1.default.sign(jwtPayload, JWT_SECRET, {
         algorithm: JWT_ALGORITHM,
         noTimestamp: true,
@@ -77,7 +77,7 @@ async function createDoctorHandler(request, h) {
         if (!Doctor) {
             logger.error("Failed to create Doctor", Helpers_1.RequestType.CREATE, Requester, Doctor.toString());
         }
-        const token = generateAuthToken(name, email, Helpers_1.TokenType.DOCTOR, Doctor.id);
+        const token = generateAuthToken(name, email, Helpers_1.TokenType.DOCTOR, Doctor.id, "doctor");
         const expiration = (0, date_fns_1.add)(new Date(), {
             minutes: AUTHENTICATION_TOKEN_EXPIRATION_MINUTES,
         });
@@ -262,7 +262,7 @@ async function createPatientHandler(request, h) {
         if (!Patient) {
             logger.error("Failed to create Patient", Helpers_1.RequestType.CREATE, Requester, Patient.toString());
         }
-        const token = generateAuthToken(name, email, Helpers_1.TokenType.PATIENT, Patient.id);
+        const token = generateAuthToken(name, email, Helpers_1.TokenType.PATIENT, Patient.id, "patient");
         const expiration = (0, date_fns_1.add)(new Date(), {
             minutes: AUTHENTICATION_TOKEN_EXPIRATION_MINUTES,
         });
@@ -301,7 +301,11 @@ async function createPatientHandler(request, h) {
 // list all patients
 async function listPatientHandler(request, h) {
     const { prisma, logger } = request.server.app;
-    const { name, adminId } = request.auth.credentials;
+    const { name, userId, userType } = request.auth.credentials;
+    let adminId = " ";
+    if (userType === "admin") {
+        adminId = userId;
+    }
     try {
         const patients = await (0, Helpers_1.executePrismaMethod)(prisma, "patient", "findMany", {
             select: {
@@ -435,9 +439,11 @@ var Role;
 async function loginHandler(request, h) {
     const { prisma, logger } = request.server.app;
     const { email, password, role } = request.payload;
+    let userType = "";
     try {
         let user;
         if (role === Role.DOCTOR) {
+            userType = Role.DOCTOR;
             user = await (0, Helpers_1.executePrismaMethod)(prisma, "doctor", "findUnique", {
                 where: {
                     email: email,
@@ -445,6 +451,7 @@ async function loginHandler(request, h) {
             });
         }
         else if (role === Role.PATIENT) {
+            userType = Role.PATIENT;
             user = await (0, Helpers_1.executePrismaMethod)(prisma, "patient", "findUnique", {
                 where: {
                     email: email,
@@ -452,6 +459,7 @@ async function loginHandler(request, h) {
             });
         }
         else if (role === Role.ADMIN) {
+            userType = Role.ADMIN;
             user = await (0, Helpers_1.executePrismaMethod)(prisma, "admin", "findUnique", {
                 where: {
                     email: email,
@@ -477,7 +485,7 @@ async function loginHandler(request, h) {
                 [role.toUpperCase() === Helpers_1.TokenType.DOCTOR ? "doctorId" : role.toUpperCase() === Helpers_1.TokenType.PATIENT ? "patientId" : "adminId"]: user.id,
             },
         });
-        const token = generateAuthToken(user.name, email, findToken.type, user.id);
+        const token = generateAuthToken(user.name, email, findToken.type, user.id, userType);
         const expiration = (0, date_fns_1.add)(new Date(), {
             minutes: AUTHENTICATION_TOKEN_EXPIRATION_MINUTES,
         });
@@ -546,7 +554,11 @@ async function logoutHandler(request, h) {
 async function assignDoctorToPatientHandler(request, h) {
     const { prisma, logger } = request.server.app;
     const { doctorId } = request.payload;
-    const { patientId, name } = request.auth.credentials;
+    const { userId, userType, name } = request.auth.credentials;
+    let patientId = "";
+    if (userType === "patient") {
+        patientId = userId;
+    }
     try {
         // Check if doctor exists
         const doctor = await (0, Helpers_1.executePrismaMethod)(prisma, "doctor", "findUnique", {
@@ -583,7 +595,11 @@ async function assignDoctorToPatientHandler(request, h) {
 // Get all patients assigned to a doctor
 async function getDoctorPatientsHandler(request, h) {
     const { prisma, logger } = request.server.app;
-    const { doctorId, name } = request.auth.credentials;
+    const { userId, userType, name } = request.auth.credentials;
+    let doctorId = "";
+    if (userType === "doctor") {
+        doctorId = userId;
+    }
     try {
         const patients = await (0, Helpers_1.executePrismaMethod)(prisma, "patient", "findMany", {
             where: {

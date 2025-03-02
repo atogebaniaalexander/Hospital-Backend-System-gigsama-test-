@@ -1,40 +1,17 @@
 import Hapi from "@hapi/hapi";
 import Joi from "joi";
-import dotenv from "dotenv";
-import { isPatientOrAdmin, isUserPatient, patientValidateAPIToken } from "../Helpers";
+
+import { isPatientOrAdmin, isUserPatient } from "../Helpers";
 import { assignDoctorToPatientHandler, createPatientHandler, deletePatientHandler, listPatientHandler, updatePatientHandler } from "../Handlers";
 import { createPatientInputValidator, updatePatientInputValidator } from "../Validators";
+import { API_AUTH_STRATEGY } from "./Auth";
 
-declare module "@hapi/hapi" {
-  export interface AuthCredentials {
-    patientId: string;
-    tokenId: string;
-    email: string;
-    name: string;
-  }
-}
-
-dotenv.config();
-
-const JWT_SECRET = process.env.JWT_SECRET || "SUPER_SECRET_JWT_SECRET";
-const JWT_ALGORITHM = "HS256";
-const API_AUTH_STRATEGY = "PATIENT-JWT";
 
 const patientPlugin: Hapi.Plugin<void> = {
     name: "patient",
     dependencies: ["prisma", "hapi-auth-jwt2"],
     register: async function (server: Hapi.Server) {
-         if (!process.env.JWT_SECRET) {
-           server.log(
-             "warn",
-             "The JWT_SECRET env var is not set. This is unsafe! If running in production, set it."
-           );
-         }
-         server.auth.strategy(API_AUTH_STRATEGY, "jwt", {
-           key: JWT_SECRET,
-           verifyOptions: { algorithms: [JWT_ALGORITHM] },
-           validate: patientValidateAPIToken,
-         });
+        
 
          server.route([
            // create a patient route

@@ -8,6 +8,7 @@ import pm2plugin from "./Plugins/pm2";
 import adminPlugin from "./Plugins/Admin";
 import doctorPlugin from "./Plugins/Doctor";
 import patientPlugin from "./Plugins/Patient";
+import authPlugin from "./Plugins/Auth";
 
 
 
@@ -44,6 +45,7 @@ export async function createServer(): Promise<Hapi.Server> {
   const plugins: Array<Hapi.ServerRegisterPluginObject<any>> = [
     { plugin: pm2plugin },
     { plugin: hapiAuthJwt2 },
+    { plugin: authPlugin },
     { plugin: prismaPlugin },
     { plugin: adminPlugin },
     { plugin: doctorPlugin },

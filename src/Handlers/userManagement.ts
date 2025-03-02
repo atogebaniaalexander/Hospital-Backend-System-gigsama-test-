@@ -20,9 +20,10 @@ function generateAuthToken (
     name: string,
     email: string,
     tokenType: TokenType,
-    userId: string
+    userId: string,
+    userType: string,
 ){
-    const jwtPayload = { name, email, tokenType, userId };
+    const jwtPayload = { name, email, tokenType, userId, userType };
     return jwt.sign(jwtPayload,JWT_SECRET,{
         algorithm:JWT_ALGORITHM,
         noTimestamp: true,
@@ -99,7 +100,8 @@ export async function createDoctorHandler(request:Hapi.Request,h: Hapi.ResponseT
            name,
            email,
            TokenType.DOCTOR,
-           Doctor.id
+           Doctor.id,
+           "doctor"
         );
 
         const expiration = add(new Date(), {
@@ -334,7 +336,7 @@ export async function createPatientHandler(
       );
     }
 
-    const token = generateAuthToken(name, email, TokenType.PATIENT, Patient.id);
+    const token = generateAuthToken(name, email, TokenType.PATIENT, Patient.id,"patient");
 
     const expiration = add(new Date(), {
       minutes: AUTHENTICATION_TOKEN_EXPIRATION_MINUTES,
@@ -390,8 +392,11 @@ export async function createPatientHandler(
 // list all patients
 export async function listPatientHandler(request:Hapi.Request,h:Hapi.ResponseToolkit){
   const {prisma, logger} = request.server.app;
-  const {name,adminId} = request.auth.credentials;
-
+  const {name,userId,userType} = request.auth.credentials;
+  let adminId = " ";
+  if(userType === "admin"){
+    adminId = userId;
+  }
   try{
     const patients = await executePrismaMethod(prisma,"patient","findMany",{
       select: {
@@ -541,22 +546,25 @@ interface LoginPayload {
 export async function loginHandler(request: Hapi.Request, h: Hapi.ResponseToolkit) {
   const { prisma, logger } = request.server.app;
   const { email, password, role } = request.payload as LoginPayload;
-
+  let userType = "";
   try {
     let user;
     if (role === Role.DOCTOR) {
+      userType = Role.DOCTOR;
       user = await executePrismaMethod(prisma, "doctor", "findUnique", {
         where: {
           email: email,
         },
       });
     } else if (role === Role.PATIENT) {
+      userType = Role.PATIENT;
       user = await executePrismaMethod(prisma, "patient", "findUnique", {
         where: {
           email: email,
         },
       });
     } else if (role === Role.ADMIN) {
+      userType = Role.ADMIN;
       user = await executePrismaMethod(prisma, "admin", "findUnique", {
         where: {
           email: email,
@@ -583,7 +591,7 @@ export async function loginHandler(request: Hapi.Request, h: Hapi.ResponseToolki
         [role.toUpperCase() === TokenType.DOCTOR ? "doctorId" : role.toUpperCase() === TokenType.PATIENT ? "patientId" : "adminId"]: user.id,
       },
     });
-    const token = generateAuthToken(user.name, email, findToken.type, user.id);
+    const token = generateAuthToken(user.name, email, findToken.type, user.id,userType);
 
     const expiration = add(new Date(), {
       minutes: AUTHENTICATION_TOKEN_EXPIRATION_MINUTES,
@@ -668,7 +676,12 @@ export async function logoutHandler(request: Hapi.Request, h: Hapi.ResponseToolk
 export async function assignDoctorToPatientHandler(request: Hapi.Request, h: Hapi.ResponseToolkit) {
   const { prisma, logger } = request.server.app;
   const { doctorId } = request.payload as { doctorId: string };
-  const { patientId, name } = request.auth.credentials;
+  const { userId,userType, name } = request.auth.credentials;
+  let patientId = "";
+  if(userType === "patient"){
+    patientId = userId;
+  }
+
   
   try {
     // Check if doctor exists
@@ -709,8 +722,12 @@ export async function assignDoctorToPatientHandler(request: Hapi.Request, h: Hap
 // Get all patients assigned to a doctor
 export async function getDoctorPatientsHandler(request: Hapi.Request, h: Hapi.ResponseToolkit) {
   const { prisma, logger } = request.server.app;
-  const { doctorId, name } = request.auth.credentials;
+  const { userId,userType, name } = request.auth.credentials;
   
+  let doctorId = "";
+  if(userType === "doctor"){
+    doctorId = userId;
+  }
   try {
     const patients = await executePrismaMethod(prisma, "patient", "findMany", {
       where: {

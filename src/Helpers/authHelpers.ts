@@ -5,13 +5,30 @@ import { APITokenPayload } from "../Models";
 
 export const AUTHENTICATION_TOKEN_EXPIRATION_MINUTES = 720;
 
-export async function doctorValidateAPIToken(
-  decoded: APITokenPayload,
+export interface UserAPITokenPayload {
+  email: string;
+  userId: string;
+  name: string;
+  userType: string; // E.g., 'DOCTOR', 'PATIENT', 'ADMIN', etc.
+}
+
+export async function validateAPIToken(
+  decoded: UserAPITokenPayload,
   request: Hapi.Request,
   h: Hapi.ResponseToolkit
 ) {
   const { prisma, logger } = request.server.app;
-  const { email, doctorId, name } = decoded;
+  const { email, userId, name, userType } = decoded;
+
+  // Map userType to TokenType enum
+  const tokenType = TokenType[userType];
+  if (!tokenType) {
+    logger.error(`Invalid user type: ${userType}`, RequestType.READ, "validation Request");
+    return h.response({ message: "Invalid user type" }).code(403);
+  }
+
+  // Use dynamic key for the foreign key based on user type
+  const foreignKeyField = `${userType.toLowerCase()}Id`;
 
   const decodedTokenId = await executePrismaMethod(
     prisma,
@@ -19,8 +36,8 @@ export async function doctorValidateAPIToken(
     "findUnique",
     {
       where: {
-        doctorId: doctorId,
-        type: TokenType.DOCTOR,
+        [foreignKeyField]: userId,
+        type: tokenType,
       },
       select: {
         id: true,
@@ -43,36 +60,43 @@ export async function doctorValidateAPIToken(
       {
         where: {
           id: tokenId,
-          doctorId: doctorId,
+          [foreignKeyField]: userId,
         },
       }
     );
+
     if (!getTokenData || !getTokenData?.valid) {
       return {
         isValid: false,
         errorMessage: "token does not exist or is invalid",
       };
     }
+
     if (getTokenData.expiration < new Date()) {
       return { isValid: false, errorMessage: "Expired token" };
     }
-    const doctor = await executePrismaMethod(prisma, "doctor", "findUique", {
+
+    // Get user model name from userType (lowercase first letter)
+    const userModel = userType.toLowerCase();
+    const user = await executePrismaMethod(prisma, userModel, "findUnique", {
       where: {
-        id: doctorId,
+        id: userId,
         email: email,
       },
     });
-    if (!doctor) {
+
+    if (!user) {
       return {
         isValid: false,
-        errorMessage: "Doctor does not exist",
+        errorMessage: `${userType} does not exist`,
       };
     }
 
     return {
       isValid: true,
       credentials: {
-        doctorId: doctor.id,
+        userId: user.id,
+        userType: userType.toLowerCase(),
         tokenId: getTokenData.id,
         email: email,
         name: name,
@@ -91,10 +115,17 @@ export async function doctorValidateAPIToken(
   }
 }
 
-export async function isUserDoctor(request: Hapi.Request, h: Hapi.ResponseToolkit) {
-  const { doctorId,email} = request.auth.credentials;
-  const {prisma} = request.server.app;
 
+
+export async function isUserDoctor(request: Hapi.Request, h: Hapi.ResponseToolkit) {
+  const { userId,userType,email} = request.auth.credentials;
+  const {prisma} = request.server.app;
+  let doctorId = "";
+  if(userType === "doctor"){
+    doctorId = userId;
+  }else{
+    return h.response({message: "Not authorized!!"}).code(403);
+  }
   const checkIfIsDoctor = await executePrismaMethod(prisma,"doctor","findFirst",{
     where:{
       id:doctorId,
@@ -109,98 +140,20 @@ export async function isUserDoctor(request: Hapi.Request, h: Hapi.ResponseToolki
   return h.continue;
 }
 
-export async function adminValidateAPIToken(
-  decoded: APITokenPayload,
-  request: Hapi.Request,
-  h: Hapi.ResponseToolkit
-) {
-  const { prisma, logger } = request.server.app;
-  const { email, adminId, name } = decoded;
 
-  const decodedTokenId = await executePrismaMethod(
-    prisma,
-    "token",
-    "findUnique",
-    {
-      where: {
-        adminId: adminId,
-        type: TokenType.ADMIN,
-      },
-      select: {
-        id: true,
-      },
-    }
-  );
-
-  if (!decodedTokenId) {
-    logger.error("Invalid credentials", RequestType.READ, "validation Request");
-    return h.response({ message: "Invalid credentials" }).code(403);
-  }
-
-  const tokenId = decodedTokenId.id;
-
-  try {
-    const getTokenData = await executePrismaMethod(
-      prisma,
-      "token",
-      "findUnique",
-      {
-        where: {
-          id: tokenId,
-          adminId: adminId,
-        },
-      }
-    );
-    if (!getTokenData || !getTokenData?.valid) {
-      return {
-        isValid: false,
-        errorMessage: "token does not exist or is invalid",
-      };
-    }
-    if (getTokenData.expiration < new Date()) {
-      return { isValid: false, errorMessage: "Expired token" };
-    }
-    const admin = await executePrismaMethod(prisma, "admin", "findUique", {
-      where: {
-        id: adminId,
-        email: email,
-      },
-    });
-    if (!admin) {
-      return {
-        isValid: false,
-        errorMessage: "Admin does not exist",
-      };
-    }
-
-    return {
-      isValid: true,
-      credentials: {
-        adminId: admin.id,
-        tokenId: getTokenData.id,
-        email: email,
-        name: name,
-      },
-    };
-  } catch (err) {
-    request.log(
-      ["error", "auth", "db"],
-      `Failed to get information from database: ${err}`
-    );
-
-    return {
-      isValid: false,
-      errorMessage: "Validation Error, failed to get information from database",
-    };
-  }
-}
 export async function isUserAdmin(
   request: Hapi.Request,
   h: Hapi.ResponseToolkit
 ) {
-  const { adminId, email } = request.auth.credentials;
+  const { userId,userType, email } = request.auth.credentials;
   const { prisma } = request.server.app;
 
+  let adminId = "";
+  if(userType === "admin"){
+    adminId = userId;
+  }else{
+    return h.response({message: "Not authorized!!"}).code
+  }
   const checkIfIsAdmin = await executePrismaMethod(
     prisma,
     "admin",
@@ -219,98 +172,20 @@ export async function isUserAdmin(
 
   return h.continue;
 }
-export async function patientValidateAPIToken(
-  decoded: APITokenPayload,
-  request: Hapi.Request,
-  h: Hapi.ResponseToolkit
-) {
-  const { prisma, logger } = request.server.app;
-  const { email, patientId, name } = decoded;
 
-  const decodedTokenId = await executePrismaMethod(
-    prisma,
-    "token",
-    "findUnique",
-    {
-      where: {
-        patientId: patientId,
-        type: TokenType.PATIENT,
-      },
-      select: {
-        id: true,
-      },
-    }
-  );
-
-  if (!decodedTokenId) {
-    logger.error("Invalid credentials", RequestType.READ, "validation Request");
-    return h.response({message:"Invalid credentials"}).code(403);
-  }
-
-  const tokenId = decodedTokenId.id;
-
-  try {
-    const getTokenData = await executePrismaMethod(
-      prisma,
-      "token",
-      "findUnique",
-      {
-        where: {
-          id: tokenId,
-          patientId: patientId,
-        },
-      }
-    );
-    if (!getTokenData || !getTokenData?.valid) {
-      return {
-        isValid: false,
-        errorMessage: "token does not exist or is invalid",
-      };
-    }
-    if (getTokenData.expiration < new Date()) {
-      return { isValid: false, errorMessage: "Expired token" };
-    }
-    const patient = await executePrismaMethod(prisma, "patient", "findUique", {
-      where: {
-        id: patientId,
-        email: email,
-      },
-    });
-    if (!patient) {
-      return {
-        isValid: false,
-        errorMessage: "Patient does not exist",
-      };
-    }
-
-    return {
-      isValid: true,
-      credentials: {
-        patientId: patient.id,
-        tokenId: getTokenData.id,
-        email: email,
-        name: name,
-      },
-    };
-  } catch (err) {
-    request.log(
-      ["error", "auth", "db"],
-      `Failed to get information from database: ${err}`
-    );
-
-    return {
-      isValid: false,
-      errorMessage: "Validation Error, failed to get information from database",
-    };
-  }
-}
 export async function isUserPatient(
   request: Hapi.Request,
   h: Hapi.ResponseToolkit
 ) {
-  const { patientId, email } = request.auth.credentials;
+  const { userId,userType, email } = request.auth.credentials;
   const { prisma } = request.server.app;
 
+  let patientId = "";
+  if(userType === "patient"){
+    patientId = userId;
+  }else{
+    return h.response({message: "Not authorized!!"}).code(403);
+  }
   const checkIfIsPatient = await executePrismaMethod(
     prisma,
     "patient",
@@ -335,39 +210,45 @@ export async function isDoctorOrAdmin( request: Hapi.Request, h: Hapi.ResponseTo
   const {prisma} = request.server.app;
   let isDoctor = false;
   let isAdmin = false;
-  if(credentials.doctorId !== null || credentials.doctorId !== undefined){
-    const checkIfIsDoctor = await executePrismaMethod(prisma,"doctor","findFirst",{
-        where:{
-          id:credentials.doctorId,
-          email: credentials.email
-        }
-    });
+  if(credentials.userType === "doctor" || credentials.userType === "admin"){
 
-    if(!checkIfIsDoctor){
+    if(credentials.userId === "doctor"){
+      const doctorId = credentials.userId;
+      const checkIfIsDoctor = await executePrismaMethod(prisma,"doctor","findFirst",{
+          where:{
+            id:doctorId,
+            email: credentials.email
+          }
+      });
+
+      if(!checkIfIsDoctor){
+        return h.response({message: "Not authorized!!"}).code(403);
+      }
+
+      isDoctor = true;
+    }
+    else if(credentials.userId === "admin"){
+        const adminId = credentials.userId;
+      const checkIfIsAdmin = await executePrismaMethod(prisma,"admin","findFirst",{
+          where:{
+            id:adminId,
+            email: credentials.email
+          }
+      });
+
+      if(!checkIfIsAdmin){
+        return h.response({message: "Not authorized!!"}).code(403);
+      }
+
+      isAdmin = true;
+
+    }else{
       return h.response({message: "Not authorized!!"}).code(403);
     }
 
-    isDoctor = true;
-  } else if(credentials.adminId !== null || credentials.adminId !== undefined){
-     const checkIfIsAdmin = await executePrismaMethod(prisma,"admin","findFirst",{
-        where:{
-          id:credentials.adminId,
-          email: credentials.email
-        }
-    });
-
-    if(!checkIfIsAdmin){
-      return h.response({message: "Not authorized!!"}).code(403);
+    if(isDoctor || isAdmin) {
+      return h.continue;
     }
-
-    isAdmin = true;
-
-  }else{
-     return h.response({message: "Not authorized!!"}).code(403);
-  }
-  
-  if(isDoctor || isAdmin) {
-    return h.continue;
   }
 }
 
@@ -376,38 +257,42 @@ export async function isPatientOrAdmin( request: Hapi.Request, h: Hapi.ResponseT
   const {prisma} = request.server.app;
   let isPatient = false;
   let isAdmin = false;
-  if(credentials.patientId !== null || credentials.patientId !== undefined){
-    const checkIfIsPatient = await executePrismaMethod(prisma,"patient","findFirst",{
-        where:{
-          id:credentials.doctorId,
-          email: credentials.email
-        }
-    });
+  if(credentials.userType === "patient" || credentials.userType === "admin"){
+    if(credentials.userType === "patient"){
+      const patientId = credentials.userId;
+      const checkIfIsPatient = await executePrismaMethod(prisma,"patient","findFirst",{
+          where:{
+            id:patientId,
+            email: credentials.email
+          }
+      });
 
-    if(!checkIfIsPatient){
+      if(!checkIfIsPatient){
+        return h.response({message: "Not authorized!!"}).code(403);
+      }
+
+      isPatient = true;
+    } else if(credentials.userType === "admin"){
+      const adminId = credentials.userId
+      const checkIfIsAdmin = await executePrismaMethod(prisma,"admin","findFirst",{
+          where:{
+            id:adminId,
+            email: credentials.email
+          }
+      });
+
+      if(!checkIfIsAdmin){
+        return h.response({message: "Not authorized!!"}).code(403);
+      }
+
+      isAdmin = true;
+
+    }else{
       return h.response({message: "Not authorized!!"}).code(403);
     }
-
-    isPatient = true;
-  } else if(credentials.adminId !== null || credentials.adminId !== undefined){
-     const checkIfIsAdmin = await executePrismaMethod(prisma,"admin","findFirst",{
-        where:{
-          id:credentials.adminId,
-          email: credentials.email
-        }
-    });
-
-    if(!checkIfIsAdmin){
-      return h.response({message: "Not authorized!!"}).code(403);
+    
+    if(isPatient || isAdmin) {
+      return h.continue;
     }
-
-    isAdmin = true;
-
-  }else{
-     return h.response({message: "Not authorized!!"}).code(403);
-  }
-  
-  if(isPatient || isAdmin) {
-    return h.continue;
   }
 }

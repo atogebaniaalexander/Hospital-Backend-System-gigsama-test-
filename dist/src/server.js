@@ -15,6 +15,7 @@ const pm2_1 = __importDefault(require("./Plugins/pm2"));
 const Admin_1 = __importDefault(require("./Plugins/Admin"));
 const Doctor_1 = __importDefault(require("./Plugins/Doctor"));
 const Patient_1 = __importDefault(require("./Plugins/Patient"));
+const Auth_1 = __importDefault(require("./Plugins/Auth"));
 dotenv_1.default.config();
 const isProduction = process.env.NODE_ENV === "production";
 const server = hapi_1.default.server({
@@ -37,6 +38,7 @@ async function createServer() {
     const plugins = [
         { plugin: pm2_1.default },
         { plugin: hapi_auth_jwt2_1.default },
+        { plugin: Auth_1.default },
         { plugin: prisma_1.default },
         { plugin: Admin_1.default },
         { plugin: Doctor_1.default },
