@@ -28,7 +28,7 @@ const doctorInputValidator = joi_1.default.object({
     }),
     name: joi_1.default.string().alter({
         create: (schema) => schema.required(),
-        update: (schema) => schema.required(),
+        update: (schema) => schema.optional().allow(),
     }),
     password: joi_1.default.string().alter({
         create: (schema) => schema.required(),
@@ -52,7 +52,7 @@ const patientInputValidator = joi_1.default.object({
     }),
     name: joi_1.default.string().alter({
         create: (schema) => schema.required(),
-        update: (schema) => schema.required(),
+        update: (schema) => schema.optional().allow(),
     }),
     password: joi_1.default.string().alter({
         create: (schema) => schema.required(),
