@@ -3,7 +3,7 @@ import Joi from "joi";
 import dotenv from "dotenv";
 import { adminValidateAPIToken, isUserAdmin } from "../Helpers";
 import { logsHandler } from "../Utils";
-import { listAdminHandler } from "../Handlers";
+
 
 declare module "@hapi/hapi" {
   export interface AuthCredentials {
@@ -37,19 +37,6 @@ const adminPlugin: Hapi.Plugin<void> = {
          });
 
          server.route([
-          // get admins
-          {
-            method: "GET",
-            path: "/api/v1/Admins",
-            handler: listAdminHandler,
-              options:{
-                pre:[isUserAdmin],
-                auth:{
-                  mode:"required",
-                  strategy: API_AUTH_STRATEGY
-                }
-              }
-          },
           //logs
           {
             method: "PUT",

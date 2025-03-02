@@ -9,6 +9,7 @@
     "compile": "tsc -p ./tsconfig.json",
     "dev": "ts-node-dev --respawn ./src/index.ts",
     "seed-Admin": "ts-node ./prisma/createAdmin.ts",
+    "seek-Admins": "ts-node ./prisma/listAdmins.ts",
     "test": "TEST=true jest",
     "test:watch": "TEST=true jest --watch",
     "postgres:start": "docker-compose up -d",
