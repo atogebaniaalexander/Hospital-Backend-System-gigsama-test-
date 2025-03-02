@@ -96,7 +96,7 @@ export async function validateAPIToken(
       isValid: true,
       credentials: {
         userId: user.id,
-        userType: userType.toLowerCase(),
+        userType: foreignKeyField,
         tokenId: getTokenData.id,
         email: email,
         name: name,

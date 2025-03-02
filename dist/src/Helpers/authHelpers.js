@@ -68,7 +68,7 @@ async function validateAPIToken(decoded, request, h) {
             isValid: true,
             credentials: {
                 userId: user.id,
-                userType: userType.toLowerCase(),
+                userType: foreignKeyField,
                 tokenId: getTokenData.id,
                 email: email,
                 name: name,
