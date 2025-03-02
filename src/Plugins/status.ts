@@ -1,13 +1,13 @@
 import Hapi from "@hapi/hapi";
 import Joi from "joi";
 import { loginHandler, logoutHandler } from "../Handlers";
-import { log } from "console";
 
 
-const API_AUTH_STRATEGY = "API";
+
+const API_AUTH_STRATEGY = "PATIENT-JWT";
 
 const statusPlugin: Hapi.Plugin<undefined> = {
-  name: "app/status",
+  name: "status",
   register: async function (server: Hapi.Server) {
     server.route([
       {

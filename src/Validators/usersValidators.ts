@@ -13,11 +13,6 @@ const adminInputValidator = Joi.object({
     create: (schema) => schema.required(),
     update: (schema) => schema.optional().allow(),
   }),
-  id: Joi.string().alter({
-    create: (schema) => schema.forbidden(),
-    update: (schema) => schema.required(),
-  }),
-
 });
 
 export const createAdminInputValidator = adminInputValidator.tailor("create");
@@ -44,10 +39,6 @@ const doctorInputValidator = Joi.object({
     create: (schema) => schema.optional().allow(),
     update: (schema) => schema.optional().allow(),
   }),
-  id: Joi.string().alter({
-    create: (schema) => schema.forbidden(),
-    update: (schema) => schema.required(),
-  }),
 });
 
 export const createDoctorInputValidator = doctorInputValidator.tailor("create");
@@ -66,10 +57,6 @@ const patientInputValidator = Joi.object({
   password: Joi.string().alter({
     create: (schema) => schema.required(),
     update: (schema) => schema.optional().allow(),
-  }),
-  id: Joi.string().alter({
-    create: (schema) => schema.forbidden(),
-    update: (schema) => schema.required(),
   }),
 });
 

@@ -5,9 +5,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const joi_1 = __importDefault(require("joi"));
 const Handlers_1 = require("../Handlers");
-const API_AUTH_STRATEGY = "API";
+const API_AUTH_STRATEGY = "PATIENT-JWT";
 const statusPlugin = {
-    name: "app/status",
+    name: "status",
     register: async function (server) {
         server.route([
             {

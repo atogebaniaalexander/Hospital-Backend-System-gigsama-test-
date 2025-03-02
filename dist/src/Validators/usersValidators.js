@@ -18,10 +18,6 @@ const adminInputValidator = joi_1.default.object({
         create: (schema) => schema.required(),
         update: (schema) => schema.optional().allow(),
     }),
-    id: joi_1.default.string().alter({
-        create: (schema) => schema.forbidden(),
-        update: (schema) => schema.required(),
-    }),
 });
 exports.createAdminInputValidator = adminInputValidator.tailor("create");
 exports.updateAdminInputValidator = adminInputValidator.tailor("update");
@@ -46,10 +42,6 @@ const doctorInputValidator = joi_1.default.object({
         create: (schema) => schema.optional().allow(),
         update: (schema) => schema.optional().allow(),
     }),
-    id: joi_1.default.string().alter({
-        create: (schema) => schema.forbidden(),
-        update: (schema) => schema.required(),
-    }),
 });
 exports.createDoctorInputValidator = doctorInputValidator.tailor("create");
 exports.updateDoctorInputValidator = doctorInputValidator.tailor("update");
@@ -65,10 +57,6 @@ const patientInputValidator = joi_1.default.object({
     password: joi_1.default.string().alter({
         create: (schema) => schema.required(),
         update: (schema) => schema.optional().allow(),
-    }),
-    id: joi_1.default.string().alter({
-        create: (schema) => schema.forbidden(),
-        update: (schema) => schema.required(),
     }),
 });
 exports.createPatientInputValidator = patientInputValidator.tailor("create");
