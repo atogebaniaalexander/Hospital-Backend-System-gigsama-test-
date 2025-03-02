@@ -49,18 +49,16 @@ export function decodeAuthToken(token: string){
 export async function createDoctorHandler(request:Hapi.Request,h: Hapi.ResponseToolkit){
     const { prisma, logger} = request.server.app;
     const { email, name, password, specialty, available } = request.payload as DoctorModel;
-    const credentials  = request.auth.credentials;
+    const Requester = "New Doctor"
 
     try{
          const checkIfUserExist = await executePrismaMethod(
            prisma,
            "doctor",
-           "findFirst",
+           "findUnique",
            {
              where: {
                email: email,
-               name: name,
-               specialty: specialty
              },
            }
          );
@@ -69,7 +67,7 @@ export async function createDoctorHandler(request:Hapi.Request,h: Hapi.ResponseT
             logger.error(
               "Doctor Account already exists!",
               RequestType.READ,
-              credentials.name
+              Requester
             );
             return h.response({message: " Doctor Account already exist!"}).code(400);
          }
@@ -81,7 +79,7 @@ export async function createDoctorHandler(request:Hapi.Request,h: Hapi.ResponseT
             email: email,
             name: name,
             password: hashPassword,
-            specialty: specialty,
+            specialty: specialty || " ",
             available: available || false,
             createdAt: getCurrentDate(),
             updatedAt: getCurrentDate(),
@@ -92,7 +90,7 @@ export async function createDoctorHandler(request:Hapi.Request,h: Hapi.ResponseT
           logger.error(
             "Failed to create Doctor",
             RequestType.CREATE,
-            credentials.name,
+            Requester,
             Doctor.toString()
           );   
         }
@@ -128,18 +126,18 @@ export async function createDoctorHandler(request:Hapi.Request,h: Hapi.ResponseT
            logger.error(
              "Failed to create Doctor Token",
              RequestType.CREATE,
-             credentials.name,
+             Requester,
              DoctorToken.toString()
            );
            return h.response({ message: "Failed to create Doctor Token" }).code(404);
         }
 
-        logger.info("Doctor " + name + " was Successfully created!",RequestType.CREATE,credentials.name);
+        logger.info("Doctor " + name + " was Successfully created!",RequestType.CREATE,Requester);
         return h.response({message: "Doctor " + name + " was Successfully created!",}).code(201);
 
     }
     catch(err:any){
-        logger.error("Internal Server Error occurred, failed to create Doctor " + name + "'s Account",RequestType.CREATE,credentials.name,err.toString());
+        logger.error("Internal Server Error occurred, failed to create Doctor " + name + "'s Account",RequestType.CREATE,Requester,err.toString());
         return h
           .response({
             message:
@@ -289,7 +287,7 @@ export async function createPatientHandler(
 ) {
   const { prisma, logger } = request.server.app;
   const { email, name, password } = request.payload as PatientModel;
-  const credentials = request.auth.credentials;
+  const Requester = "New Patient"
 
   try {
     const checkIfUserExist = await executePrismaMethod(
@@ -299,7 +297,6 @@ export async function createPatientHandler(
       {
         where: {
           email: email,
-          name: name,
         },
       }
     );
@@ -308,7 +305,7 @@ export async function createPatientHandler(
       logger.error(
         "Patient Account already exists!",
         RequestType.READ,
-        credentials.name
+        Requester
       );
       return h
         .response({ message: " Patient Account already exist!" })
@@ -331,7 +328,7 @@ export async function createPatientHandler(
       logger.error(
         "Failed to create Patient",
         RequestType.CREATE,
-        credentials.name,
+        Requester,
         Patient.toString()
       );
     }
@@ -357,7 +354,7 @@ export async function createPatientHandler(
       logger.error(
         "Failed to create Patient Token",
         RequestType.CREATE,
-        credentials.name,
+        Requester,
         PatientToken.toString()
       );
       return h.response({ message: "Failed to create Patient Token" }).code(404);
@@ -366,7 +363,7 @@ export async function createPatientHandler(
     logger.info( 
       name + " was Successfully created!",
       RequestType.CREATE,
-      credentials.name
+      Requester
     );
     return h
       .response({ message:name + " was Successfully created!" })
@@ -376,7 +373,7 @@ export async function createPatientHandler(
       "Internal Server Error occurred, failed to create" + name +
         "'s Account",
       RequestType.CREATE,
-      credentials.name,
+      Requester,
       err.toString()
     );
     return h

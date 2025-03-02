@@ -51,17 +51,15 @@ function decodeAuthToken(token) {
 async function createDoctorHandler(request, h) {
     const { prisma, logger } = request.server.app;
     const { email, name, password, specialty, available } = request.payload;
-    const credentials = request.auth.credentials;
+    const Requester = "New Doctor";
     try {
-        const checkIfUserExist = await (0, Helpers_1.executePrismaMethod)(prisma, "doctor", "findFirst", {
+        const checkIfUserExist = await (0, Helpers_1.executePrismaMethod)(prisma, "doctor", "findUnique", {
             where: {
                 email: email,
-                name: name,
-                specialty: specialty
             },
         });
         if (checkIfUserExist) {
-            logger.error("Doctor Account already exists!", Helpers_1.RequestType.READ, credentials.name);
+            logger.error("Doctor Account already exists!", Helpers_1.RequestType.READ, Requester);
             return h.response({ message: " Doctor Account already exist!" }).code(400);
         }
         const hashPassword = await bcryptjs_1.default.hash(password, 10);
@@ -70,14 +68,14 @@ async function createDoctorHandler(request, h) {
                 email: email,
                 name: name,
                 password: hashPassword,
-                specialty: specialty,
+                specialty: specialty || " ",
                 available: available || false,
                 createdAt: (0, Helpers_1.getCurrentDate)(),
                 updatedAt: (0, Helpers_1.getCurrentDate)(),
             },
         });
         if (!Doctor) {
-            logger.error("Failed to create Doctor", Helpers_1.RequestType.CREATE, credentials.name, Doctor.toString());
+            logger.error("Failed to create Doctor", Helpers_1.RequestType.CREATE, Requester, Doctor.toString());
         }
         const token = generateAuthToken(name, email, Helpers_1.TokenType.DOCTOR, Doctor.id);
         const expiration = (0, date_fns_1.add)(new Date(), {
@@ -95,14 +93,14 @@ async function createDoctorHandler(request, h) {
             }
         });
         if (!DoctorToken) {
-            logger.error("Failed to create Doctor Token", Helpers_1.RequestType.CREATE, credentials.name, DoctorToken.toString());
+            logger.error("Failed to create Doctor Token", Helpers_1.RequestType.CREATE, Requester, DoctorToken.toString());
             return h.response({ message: "Failed to create Doctor Token" }).code(404);
         }
-        logger.info("Doctor " + name + " was Successfully created!", Helpers_1.RequestType.CREATE, credentials.name);
+        logger.info("Doctor " + name + " was Successfully created!", Helpers_1.RequestType.CREATE, Requester);
         return h.response({ message: "Doctor " + name + " was Successfully created!", }).code(201);
     }
     catch (err) {
-        logger.error("Internal Server Error occurred, failed to create Doctor " + name + "'s Account", Helpers_1.RequestType.CREATE, credentials.name, err.toString());
+        logger.error("Internal Server Error occurred, failed to create Doctor " + name + "'s Account", Helpers_1.RequestType.CREATE, Requester, err.toString());
         return h
             .response({
             message: "Internal Server Error occurred, failed to create Doctor " +
@@ -236,16 +234,15 @@ async function deleteDoctorHandler(request, h) {
 async function createPatientHandler(request, h) {
     const { prisma, logger } = request.server.app;
     const { email, name, password } = request.payload;
-    const credentials = request.auth.credentials;
+    const Requester = "New Patient";
     try {
         const checkIfUserExist = await (0, Helpers_1.executePrismaMethod)(prisma, "patient", "findUnique", {
             where: {
                 email: email,
-                name: name,
             },
         });
         if (checkIfUserExist) {
-            logger.error("Patient Account already exists!", Helpers_1.RequestType.READ, credentials.name);
+            logger.error("Patient Account already exists!", Helpers_1.RequestType.READ, Requester);
             return h
                 .response({ message: " Patient Account already exist!" })
                 .code(400);
@@ -261,7 +258,7 @@ async function createPatientHandler(request, h) {
             },
         });
         if (!Patient) {
-            logger.error("Failed to create Patient", Helpers_1.RequestType.CREATE, credentials.name, Patient.toString());
+            logger.error("Failed to create Patient", Helpers_1.RequestType.CREATE, Requester, Patient.toString());
         }
         const token = generateAuthToken(name, email, Helpers_1.TokenType.PATIENT, Patient.id);
         const expiration = (0, date_fns_1.add)(new Date(), {
@@ -279,17 +276,17 @@ async function createPatientHandler(request, h) {
             }
         });
         if (!PatientToken) {
-            logger.error("Failed to create Patient Token", Helpers_1.RequestType.CREATE, credentials.name, PatientToken.toString());
+            logger.error("Failed to create Patient Token", Helpers_1.RequestType.CREATE, Requester, PatientToken.toString());
             return h.response({ message: "Failed to create Patient Token" }).code(404);
         }
-        logger.info(name + " was Successfully created!", Helpers_1.RequestType.CREATE, credentials.name);
+        logger.info(name + " was Successfully created!", Helpers_1.RequestType.CREATE, Requester);
         return h
             .response({ message: name + " was Successfully created!" })
             .code(201);
     }
     catch (err) {
         logger.error("Internal Server Error occurred, failed to create" + name +
-            "'s Account", Helpers_1.RequestType.CREATE, credentials.name, err.toString());
+            "'s Account", Helpers_1.RequestType.CREATE, Requester, err.toString());
         return h
             .response({
             message: "Internal Server Error occurred, failed to create " +
