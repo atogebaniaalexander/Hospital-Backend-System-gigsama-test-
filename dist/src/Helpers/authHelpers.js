@@ -13,7 +13,7 @@ async function validateAPIToken(decoded, request, h) {
     const { prisma, logger } = request.server.app;
     const { email, userId, name, userType } = decoded;
     // Map userType to TokenType enum
-    const tokenType = Helpers_1.TokenType[userType];
+    const tokenType = Helpers_1.TokenType[userType.toUpperCase()];
     if (!tokenType) {
         logger.error(`Invalid user type: ${userType}`, Helpers_1.RequestType.READ, "validation Request");
         return h.response({ message: "Invalid user type" }).code(403);
@@ -68,7 +68,7 @@ async function validateAPIToken(decoded, request, h) {
             isValid: true,
             credentials: {
                 userId: user.id,
-                userType: foreignKeyField,
+                userType: userType.toLowerCase(),
                 tokenId: getTokenData.id,
                 email: email,
                 name: name,

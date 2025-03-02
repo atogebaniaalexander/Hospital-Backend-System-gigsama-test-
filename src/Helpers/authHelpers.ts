@@ -21,7 +21,7 @@ export async function validateAPIToken(
   const { email, userId, name, userType } = decoded;
 
   // Map userType to TokenType enum
-  const tokenType = TokenType[userType];
+  const tokenType = TokenType[userType.toUpperCase() as keyof typeof TokenType];
   if (!tokenType) {
     logger.error(`Invalid user type: ${userType}`, RequestType.READ, "validation Request");
     return h.response({ message: "Invalid user type" }).code(403);
@@ -96,7 +96,7 @@ export async function validateAPIToken(
       isValid: true,
       credentials: {
         userId: user.id,
-        userType: foreignKeyField,
+        userType: userType.toLowerCase(),
         tokenId: getTokenData.id,
         email: email,
         name: name,
