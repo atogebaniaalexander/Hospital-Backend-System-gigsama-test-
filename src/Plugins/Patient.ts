@@ -2,7 +2,7 @@ import Hapi from "@hapi/hapi";
 import Joi from "joi";
 
 import { isPatientOrAdmin, isUserPatient } from "../Helpers";
-import { assignDoctorToPatientHandler, createPatientHandler, deletePatientHandler, listPatientHandler, updatePatientHandler } from "../Handlers";
+import { assignDoctorToPatientHandler, createPatientHandler, deletePatientHandler, getPatientHandler, listPatientHandler, updatePatientHandler } from "../Handlers";
 import { createPatientInputValidator, updatePatientInputValidator } from "../Validators";
 import { API_AUTH_STRATEGY } from "./Auth";
 
@@ -109,7 +109,27 @@ const patientPlugin: Hapi.Plugin<void> = {
                 }
               }
             },
-            
+            // get a patient by id route
+            {
+              method: "GET",
+              path: "/api/v1/Patient/{patientId}",
+              handler: getPatientHandler,
+              options: {
+                auth: {
+                  mode: "required",
+                  strategy: API_AUTH_STRATEGY
+                },
+                validate: {
+                  params: Joi.object({
+                    patientId: Joi.number().required()
+                  }),
+                  failAction: (request, err) => {
+                    request.log("error", err);
+                    throw err;
+                  }
+                }
+              }
+            }
          ]);
     }
 };

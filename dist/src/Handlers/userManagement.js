@@ -4,14 +4,18 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.decodeAuthToken = decodeAuthToken;
+exports.getUserId = getUserId;
+exports.resetPasswordHandler = resetPasswordHandler;
 exports.createDoctorHandler = createDoctorHandler;
 exports.listDoctorsHandler = listDoctorsHandler;
 exports.updateDoctorHandler = updateDoctorHandler;
 exports.deleteDoctorHandler = deleteDoctorHandler;
+exports.getDoctorHandler = getDoctorHandler;
 exports.createPatientHandler = createPatientHandler;
 exports.listPatientHandler = listPatientHandler;
 exports.updatePatientHandler = updatePatientHandler;
 exports.deletePatientHandler = deletePatientHandler;
+exports.getPatientHandler = getPatientHandler;
 exports.loginHandler = loginHandler;
 exports.logoutHandler = logoutHandler;
 exports.assignDoctorToPatientHandler = assignDoctorToPatientHandler;
@@ -23,6 +27,7 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const Helpers_1 = require("../Helpers");
 const date_fns_1 = require("date-fns");
+const emailManagement_1 = require("./emailManagement");
 dotenv_1.default.config();
 const JWT_SECRET = process.env.JWT_SECRET || "SUPER_SECRET_JWT_SECRET";
 const JWT_ALGORITHM = "HS256";
@@ -44,6 +49,88 @@ function decodeAuthToken(token) {
     catch (error) {
         console.error("Error decoding token:", error);
         return null; // Return null or throw an error, depending on your use case
+    }
+}
+//get user id
+function getUserId(request, h) {
+    const { userId } = request.auth.credentials;
+    return h.response({ userId }).code(200);
+}
+// reset password
+async function resetPasswordHandler(request, h) {
+    const { prisma, logger } = request.server.app;
+    const { email, password } = request.payload;
+    let isDoctor = false;
+    let isPatient = false;
+    let name = "User";
+    try {
+        const findDoctor = await (0, Helpers_1.executePrismaMethod)(prisma, "doctor", "findUnique", { where: { email: email } });
+        if (!findDoctor) {
+            logger.error("User is not a Doctor", Helpers_1.RequestType.READ, email);
+        }
+        else {
+            isDoctor = true;
+        }
+        const findPatient = await (0, Helpers_1.executePrismaMethod)(prisma, "patient", "findUnique", { where: { email: email } });
+        if (!findPatient) {
+            logger.error("User is not a Patient", Helpers_1.RequestType.READ, email);
+        }
+        else {
+            isPatient = true;
+        }
+        if (isDoctor === true) {
+            const hashPassword = await bcryptjs_1.default.hash(password, 10);
+            const user = await (0, Helpers_1.executePrismaMethod)(prisma, "doctor", "update", {
+                where: {
+                    email: email
+                },
+                data: {
+                    password: hashPassword,
+                    updatedAt: (0, Helpers_1.getCurrentDate)()
+                }
+            });
+            if (!user) {
+                logger.error("Failed to reset password", Helpers_1.RequestType.UPDATE, user.name);
+                return h.response({ message: "Failed to reset password" }).code(404);
+            }
+            name = user.name;
+            const sendMail = await (0, emailManagement_1.passwordResetEmail)(email, name);
+            if (sendMail !== "Email sent") {
+                logger.error("Failed to send Password Reset Email", Helpers_1.RequestType.UPDATE, user.name);
+                await (0, Helpers_1.executePrismaMethod)(prisma, "doctor", "update", { where: { email: email }, data: { password: user.password } });
+                return h.response({ message: "Failed to send Password Reset Email" }).code(404);
+            }
+            logger.info("Password reset Successfully", Helpers_1.RequestType.UPDATE, user.name);
+        }
+        else if (isPatient === true) {
+            const hashPassword = await bcryptjs_1.default.hash(password, 10);
+            const user = await (0, Helpers_1.executePrismaMethod)(prisma, "patient", "update", {
+                where: {
+                    email: email
+                },
+                data: {
+                    password: hashPassword,
+                    updatedAt: (0, Helpers_1.getCurrentDate)()
+                }
+            });
+            if (!user) {
+                logger.error("Failed to reset password", Helpers_1.RequestType.UPDATE, user.name);
+                return h.response({ message: "Failed to reset password" }).code(404);
+            }
+            name = user.name;
+            const sendMail = await (0, emailManagement_1.passwordResetEmail)(email, name);
+            if (sendMail !== "Email sent") {
+                logger.error("Failed to send Password Reset Email", Helpers_1.RequestType.UPDATE, user.name);
+                await (0, Helpers_1.executePrismaMethod)(prisma, "patient", "update", { where: { email: email }, data: { password: user.password } });
+                return h.response({ message: "Failed to send Password Reset Email" }).code(404);
+            }
+            logger.info("Password reset Successfully", Helpers_1.RequestType.UPDATE, user.name);
+        }
+        return h.response({ message: "Password reset Successfully" }).code(201);
+    }
+    catch (err) {
+        logger.error("Internal Server Error occurred, failed to reset password", Helpers_1.RequestType.UPDATE, name, err.toString());
+        return h.response({ message: "Internal Server Error occurred, failed to reset password" }).code(500);
     }
 }
 /** DOCTOR Handlers */
@@ -95,6 +182,13 @@ async function createDoctorHandler(request, h) {
         if (!DoctorToken) {
             logger.error("Failed to create Doctor Token", Helpers_1.RequestType.CREATE, Requester, DoctorToken.toString());
             return h.response({ message: "Failed to create Doctor Token" }).code(404);
+        }
+        const sendMail = await (0, emailManagement_1.doctorAccountCreationEmail)(email, name, password);
+        if (sendMail !== "Email sent") {
+            logger.error("Failed to send Account Creation Email", Helpers_1.RequestType.CREATE, Requester, sendMail.toString());
+            await (0, Helpers_1.executePrismaMethod)(prisma, "token", "delete", { where: { id: DoctorToken.id } });
+            await (0, Helpers_1.executePrismaMethod)(prisma, "doctor", "delete", { where: { id: Doctor.id } });
+            return h.response({ message: "Failed to send Account Creation Email" }).code(404);
         }
         logger.info("Doctor " + name + " was Successfully created!", Helpers_1.RequestType.CREATE, Requester);
         return h.response({ message: "Doctor " + name + " was Successfully created!", }).code(201);
@@ -231,6 +325,38 @@ async function deleteDoctorHandler(request, h) {
         return h.response({ message: "Internal Server Error occurred, failed to delete Doctor" }).code(500);
     }
 }
+// get a doctor
+async function getDoctorHandler(request, h) {
+    const { prisma, logger } = request.server.app;
+    const { doctorId } = request.params;
+    const { name } = request.auth.credentials;
+    try {
+        const doctor = await (0, Helpers_1.executePrismaMethod)(prisma, "doctor", "findUnique", {
+            where: {
+                id: doctorId
+            }
+        });
+        if (!doctor) {
+            logger.error("Failed to fetch Doctor", Helpers_1.RequestType.READ, name);
+            return h.response({ message: "Failed to fetch Doctor" }).code(404);
+        }
+        const data = {
+            id: doctor.id,
+            name: doctor.name,
+            email: doctor.email,
+            specialty: doctor.specialty,
+            available: doctor.available,
+            createdAt: doctor.createdAt,
+            updateAt: doctor.updateAt,
+        };
+        logger.info("Doctor fetched Successfully", Helpers_1.RequestType.READ, name);
+        return h.response(data).code(200);
+    }
+    catch (err) {
+        logger.error("Internal Server Error occurred, failed to fetch Doctor", Helpers_1.RequestType.READ, name, err.toString());
+        return h.response({ message: "Internal Server Error occurred, failed to fetch Doctor" }).code(500);
+    }
+}
 /** PATIENT Handlers */
 // create a patient
 async function createPatientHandler(request, h) {
@@ -280,6 +406,13 @@ async function createPatientHandler(request, h) {
         if (!PatientToken) {
             logger.error("Failed to create Patient Token", Helpers_1.RequestType.CREATE, Requester, PatientToken.toString());
             return h.response({ message: "Failed to create Patient Token" }).code(404);
+        }
+        const sendMail = await (0, emailManagement_1.patientAccountCreationEmail)(email, name, password);
+        if (sendMail !== "Email sent") {
+            logger.error("Failed to send Account Creation Email", Helpers_1.RequestType.CREATE, Requester, sendMail.toString());
+            await (0, Helpers_1.executePrismaMethod)(prisma, "token", "delete", { where: { id: PatientToken.id } });
+            await (0, Helpers_1.executePrismaMethod)(prisma, "patient", "delete", { where: { id: Patient.id } });
+            return h.response({ message: "Failed to send Account Creation Email" }).code(404);
         }
         logger.info(name + " was Successfully created!", Helpers_1.RequestType.CREATE, Requester);
         return h
@@ -426,6 +559,37 @@ async function deletePatientHandler(request, h) {
     catch (err) {
         logger.error("Internal Server Error occurred, failed to delete Patient", Helpers_1.RequestType.DELETE, name, err.toString());
         return h.response({ message: "Internal Server Error occurred, failed to delete Patient" }).code(500);
+    }
+}
+// get a patient
+async function getPatientHandler(request, h) {
+    const { prisma, logger } = request.server.app;
+    const { patientId } = request.params;
+    const { name } = request.auth.credentials;
+    try {
+        const patient = await (0, Helpers_1.executePrismaMethod)(prisma, "patient", "findUnique", {
+            where: {
+                id: patientId
+            }
+        });
+        if (!patient) {
+            logger.error("Failed to fetch Patient", Helpers_1.RequestType.READ, name);
+            return h.response({ message: "Failed to fetch Patient" }).code(404);
+        }
+        const data = {
+            id: patient.id,
+            patientId: patient.id,
+            name: patient.name,
+            email: patient.email,
+            createdAt: patient.createdAt,
+            updateAt: patient.updateAt,
+        };
+        logger.info("Patient fetched Successfully", Helpers_1.RequestType.READ, name);
+        return h.response(data).code(200);
+    }
+    catch (err) {
+        logger.error("Internal Server Error occurred, failed to fetch Patient", Helpers_1.RequestType.READ, name, err.toString());
+        return h.response({ message: "Internal Server Error occurred, failed to fetch Patient" }).code(500);
     }
 }
 /** General  */
@@ -595,11 +759,8 @@ async function assignDoctorToPatientHandler(request, h) {
 // Get all patients assigned to a doctor
 async function getDoctorPatientsHandler(request, h) {
     const { prisma, logger } = request.server.app;
-    const { userId, userType, name } = request.auth.credentials;
-    let doctorId = 0;
-    if (userType === "doctor") {
-        doctorId = userId;
-    }
+    const doctorId = request.params.doctorId;
+    const { name } = request.auth.credentials;
     try {
         const patients = await (0, Helpers_1.executePrismaMethod)(prisma, "patient", "findMany", {
             where: {

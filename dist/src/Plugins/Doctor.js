@@ -105,13 +105,44 @@ const doctorPlugin = {
             // get patients assigned route
             {
                 method: "GET",
-                path: "/api/v1/Doctor/patients",
+                path: "/api/v1/Doctor/patients/{doctorId}",
                 handler: Handlers_1.getDoctorPatientsHandler,
                 options: {
                     pre: [Helpers_1.isUserDoctor],
                     auth: {
                         mode: "required",
                         strategy: Auth_1.API_AUTH_STRATEGY
+                    },
+                    validate: {
+                        params: joi_1.default.object({
+                            doctorId: joi_1.default.number().required()
+                        }),
+                        failAction: (request, err) => {
+                            request.log("error", err);
+                            throw err;
+                        }
+                    }
+                }
+            },
+            // get doctor by id route
+            {
+                method: "GET",
+                path: "/api/v1/Doctor/{doctorId}",
+                handler: Handlers_1.getDoctorHandler,
+                options: {
+                    pre: [Helpers_1.isDoctorOrAdmin],
+                    auth: {
+                        mode: "required",
+                        strategy: Auth_1.API_AUTH_STRATEGY
+                    },
+                    validate: {
+                        params: joi_1.default.object({
+                            doctorId: joi_1.default.number().required()
+                        }),
+                        failAction: (request, err) => {
+                            request.log("error", err);
+                            throw err;
+                        }
                     }
                 }
             }

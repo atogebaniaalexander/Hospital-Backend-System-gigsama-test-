@@ -1,7 +1,7 @@
 import Hapi from "@hapi/hapi";
 import Joi from "joi";
 import {  isDoctorOrAdmin, isUserAdmin, isUserDoctor } from "../Helpers";
-import { createDoctorHandler, deleteDoctorHandler, getAvailableDoctorsHandler, getDoctorPatientsHandler, listDoctorsHandler, updateDoctorHandler } from "../Handlers";
+import { createDoctorHandler, deleteDoctorHandler, getAvailableDoctorsHandler, getDoctorHandler, getDoctorPatientsHandler, listDoctorsHandler, updateDoctorHandler } from "../Handlers";
 import { createDoctorInputValidator, updateDoctorInputValidator } from "../Validators";
 import { API_AUTH_STRATEGY } from "./Auth";
 
@@ -104,16 +104,48 @@ const doctorPlugin: Hapi.Plugin<void> = {
             // get patients assigned route
             {
               method: "GET",
-              path: "/api/v1/Doctor/patients",
+              path: "/api/v1/Doctor/patients/{doctorId}",
               handler: getDoctorPatientsHandler,
               options: {
                 pre: [isUserDoctor],
                 auth: {
                   mode: "required",
                   strategy: API_AUTH_STRATEGY
+                },
+                validate: {
+                  params: Joi.object({
+                    doctorId: Joi.number().required()
+                  }),
+                  failAction: (request, err) => {
+                    request.log("error", err);
+                    throw err;
+                  }
+                }
+              }
+            },
+            // get doctor by id route
+            {
+              method: "GET",
+              path: "/api/v1/Doctor/{doctorId}",
+              handler: getDoctorHandler,
+              options: {
+                pre: [isDoctorOrAdmin],
+                auth: {
+                  mode: "required",
+                  strategy: API_AUTH_STRATEGY
+                },
+                validate: {
+                  params: Joi.object({
+                    doctorId: Joi.number().required()
+                  }),
+                  failAction: (request, err) => {
+                    request.log("error", err);
+                    throw err;
+                  }
                 }
               }
             }
+
          ]);
     }
 };

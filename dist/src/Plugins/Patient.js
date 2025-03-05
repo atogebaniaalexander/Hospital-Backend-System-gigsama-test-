@@ -108,6 +108,27 @@ const patientPlugin = {
                     }
                 }
             },
+            // get a patient by id route
+            {
+                method: "GET",
+                path: "/api/v1/Patient/{patientId}",
+                handler: Handlers_1.getPatientHandler,
+                options: {
+                    auth: {
+                        mode: "required",
+                        strategy: Auth_1.API_AUTH_STRATEGY
+                    },
+                    validate: {
+                        params: joi_1.default.object({
+                            patientId: joi_1.default.number().required()
+                        }),
+                        failAction: (request, err) => {
+                            request.log("error", err);
+                            throw err;
+                        }
+                    }
+                }
+            }
         ]);
     }
 };

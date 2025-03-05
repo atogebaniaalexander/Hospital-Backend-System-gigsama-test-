@@ -56,6 +56,37 @@ const authPlugin = {
                         strategy: exports.API_AUTH_STRATEGY
                     }
                 }
+            },
+            // get userId route
+            {
+                method: "GET",
+                path: "/api/v1/userId",
+                handler: Handlers_1.getUserId,
+                options: {
+                    auth: {
+                        mode: "required",
+                        strategy: exports.API_AUTH_STRATEGY
+                    }
+                }
+            },
+            // reset password route
+            {
+                method: "POST",
+                path: "/api/v1/resetPassword",
+                handler: Handlers_1.resetPasswordHandler,
+                options: {
+                    auth: false,
+                    validate: {
+                        payload: joi_1.default.object({
+                            email: joi_1.default.string().email().required(),
+                            password: joi_1.default.string().required()
+                        }),
+                        failAction: (request, err) => {
+                            request.log("error", err);
+                            throw err;
+                        },
+                    }
+                }
             }
         ]);
     }

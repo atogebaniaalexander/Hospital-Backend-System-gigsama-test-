@@ -1,7 +1,7 @@
 import Hapi from "@hapi/hapi";
 import dotenv from "dotenv";
 import { validateAPIToken } from "../Helpers";
-import { loginHandler, logoutHandler } from "../Handlers";
+import { getUserId, loginHandler, logoutHandler, resetPasswordHandler } from "../Handlers";
 import Joi from "joi";
 
 
@@ -59,7 +59,7 @@ const authPlugin: Hapi.Plugin<void> = {
             },
           },
           // logout route
-           {
+          {
             method: "GET",
             path: "/api/v1/logout",
             handler:logoutHandler,
@@ -69,8 +69,38 @@ const authPlugin: Hapi.Plugin<void> = {
                 strategy: API_AUTH_STRATEGY
               }
             }
+          },
+          // get userId route
+          {
+            method: "GET",
+            path: "/api/v1/userId",
+            handler: getUserId,
+            options:{
+              auth:{
+                mode:"required",
+                strategy: API_AUTH_STRATEGY
+              }
+            }
+          },
+          // reset password route
+          {
+            method: "POST",
+            path: "/api/v1/resetPassword",
+            handler:resetPasswordHandler,
+            options:{
+              auth:false,
+              validate:{
+                payload: Joi.object({
+                  email: Joi.string().email().required(),
+                  password: Joi.string().required()
+                }),
+                failAction: (request, err) => {
+                  request.log("error", err);
+                  throw err;
+                },
+              }
+            }
           }
-
          ]);
     }
 };

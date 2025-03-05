@@ -9,6 +9,7 @@ import { DoctorModel, PatientModel } from "../Models";
 import { executePrismaMethod, getCurrentDate, RequestType, TokenType} from "../Helpers"
 
 import { add } from "date-fns";
+import { doctorAccountCreationEmail, passwordResetEmail, patientAccountCreationEmail } from "./emailManagement";
 
 
 dotenv.config();
@@ -42,7 +43,90 @@ export function decodeAuthToken(token: string){
      }
 }
 
+//get user id
+export function getUserId(request: Hapi.Request,h: Hapi.ResponseToolkit){
+    const { userId } = request.auth.credentials;
+    return h.response({userId}).code(200);
+}
 
+// reset password
+export async function resetPasswordHandler(request:Hapi.Request,h:Hapi.ResponseToolkit){
+    const { prisma,logger} = request.server.app;
+    const { email, password } = request.payload as {email: string, password: string};
+    let isDoctor = false;
+    let isPatient = false;
+    let name = "User";
+    try{
+      const findDoctor = await executePrismaMethod(prisma,"doctor","findUnique",{where:{email: email}});
+      if(!findDoctor){
+        logger.error("User is not a Doctor",RequestType.READ,email);
+      }else{
+        isDoctor = true;
+      }
+      const findPatient = await executePrismaMethod(prisma,"patient","findUnique",{where:{email: email}});
+      if(!findPatient){
+        logger.error("User is not a Patient",RequestType.READ,email);
+      }else{
+        isPatient = true;
+      }
+
+      if(isDoctor === true){
+        const hashPassword = await bcrypt.hash(password, 10);
+        const user = await executePrismaMethod(prisma,"doctor","update",{
+          where:{
+            email: email
+          },
+          data:{
+            password: hashPassword,
+            updatedAt: getCurrentDate()
+          }
+        });
+
+        if(!user){
+          logger.error("Failed to reset password",RequestType.UPDATE,user.name);
+          return h.response({message: "Failed to reset password"}).code(404);
+        }
+        name = user.name;
+        const sendMail = await passwordResetEmail(email,name);
+        if(sendMail !== "Email sent"){
+          logger.error("Failed to send Password Reset Email",RequestType.UPDATE,user.name);
+          await executePrismaMethod(prisma,"doctor","update",{where:{email:email},data:{password: user.password}});
+          return h.response({message: "Failed to send Password Reset Email"}).code(404);
+        }
+        logger.info("Password reset Successfully",RequestType.UPDATE,user.name);
+      }else if(isPatient === true){
+        const hashPassword = await bcrypt.hash(password, 10);
+        const user = await executePrismaMethod(prisma,"patient","update",{
+          where:{
+            email: email
+          },
+          data:{
+            password: hashPassword,
+            updatedAt: getCurrentDate()
+          }
+        });
+
+        if(!user){
+          logger.error("Failed to reset password",RequestType.UPDATE,user.name);
+          return h.response({message: "Failed to reset password"}).code(404);
+        }
+        name = user.name;
+        const sendMail = await passwordResetEmail(email,name);
+        if(sendMail !== "Email sent"){
+          logger.error("Failed to send Password Reset Email",RequestType.UPDATE,user.name);
+          await executePrismaMethod(prisma,"patient","update",{where:{email:email},data:{password: user.password}});
+          return h.response({message: "Failed to send Password Reset Email"}).code(404);
+        }
+        logger.info("Password reset Successfully",RequestType.UPDATE,user.name);
+      }
+      
+      return h.response({message: "Password reset Successfully"}).code(201);
+
+    }catch(err:any){
+        logger.error("Internal Server Error occurred, failed to reset password",RequestType.UPDATE,name,err.toString());
+        return h.response({message: "Internal Server Error occurred, failed to reset password"}).code(500);
+    }
+}
 
 
 /** DOCTOR Handlers */
@@ -133,7 +217,18 @@ export async function createDoctorHandler(request:Hapi.Request,h: Hapi.ResponseT
            );
            return h.response({ message: "Failed to create Doctor Token" }).code(404);
         }
-
+        const sendMail = await doctorAccountCreationEmail(email,name,password);
+        if(sendMail !== "Email sent"){
+          logger.error(
+            "Failed to send Account Creation Email",
+            RequestType.CREATE,
+            Requester,
+            sendMail.toString()
+          );
+          await executePrismaMethod(prisma,"token","delete",{where:{id:DoctorToken.id}});
+          await executePrismaMethod(prisma,"doctor","delete",{where:{id:Doctor.id}});
+          return h.response({ message: "Failed to send Account Creation Email" }).code(404);
+        }
         logger.info("Doctor " + name + " was Successfully created!",RequestType.CREATE,Requester);
         return h.response({message: "Doctor " + name + " was Successfully created!",}).code(201);
 
@@ -281,6 +376,41 @@ export async function deleteDoctorHandler(request: Hapi.Request,h:Hapi.ResponseT
       return h.response({message: "Internal Server Error occurred, failed to delete Doctor"}).code(500);
   }
 }
+// get a doctor
+export async function getDoctorHandler(request:Hapi.Request,h:Hapi.ResponseToolkit){
+  const { prisma,logger} = request.server.app;
+  const { doctorId } = request.params;
+  const { name } = request.auth.credentials;
+
+  try{
+    const doctor = await executePrismaMethod(prisma,"doctor","findUnique",{
+      where:{
+        id: doctorId
+      }
+    });
+
+    if(!doctor){
+      logger.error("Failed to fetch Doctor",RequestType.READ,name);
+      return h.response({message: "Failed to fetch Doctor"}).code(404);
+    }
+    const data = {
+      id:doctor.id,
+      name: doctor.name,
+      email: doctor.email,
+      specialty: doctor.specialty,
+      available: doctor.available,
+      createdAt: doctor.createdAt,
+      updateAt: doctor.updateAt,
+    }
+
+    logger.info("Doctor fetched Successfully",RequestType.READ,name);
+    return h.response(data).code(200);
+
+  }catch(err:any){
+    logger.error("Internal Server Error occurred, failed to fetch Doctor",RequestType.READ,name,err.toString());
+    return h.response({message: "Internal Server Error occurred, failed to fetch Doctor"}).code(500);
+  }
+}
 
 /** PATIENT Handlers */
 // create a patient
@@ -362,7 +492,19 @@ export async function createPatientHandler(
       );
       return h.response({ message: "Failed to create Patient Token" }).code(404);
     }
-
+    
+    const sendMail = await patientAccountCreationEmail(email,name,password);
+    if(sendMail !== "Email sent"){
+      logger.error(
+        "Failed to send Account Creation Email",
+        RequestType.CREATE,
+        Requester,
+        sendMail.toString()
+      );
+      await executePrismaMethod(prisma,"token","delete",{where:{id:PatientToken.id}});
+      await executePrismaMethod(prisma,"patient","delete",{where:{id:Patient.id}});
+      return h.response({ message: "Failed to send Account Creation Email" }).code(404);
+    }
     logger.info( 
       name + " was Successfully created!",
       RequestType.CREATE,
@@ -526,6 +668,40 @@ export async function deletePatientHandler(request: Hapi.Request,h:Hapi.Response
   }catch(err:any){
       logger.error("Internal Server Error occurred, failed to delete Patient",RequestType.DELETE,name,err.toString());
       return h.response({message: "Internal Server Error occurred, failed to delete Patient"}).code(500);
+  }
+}
+// get a patient
+export async function getPatientHandler(request:Hapi.Request,h:Hapi.ResponseToolkit){
+  const { prisma,logger} = request.server.app;
+  const { patientId } = request.params;
+  const { name } = request.auth.credentials;
+
+  try{
+    const patient = await executePrismaMethod(prisma,"patient","findUnique",{
+      where:{
+        id: patientId
+      }
+    });
+
+    if(!patient){
+      logger.error("Failed to fetch Patient",RequestType.READ,name);
+      return h.response({message: "Failed to fetch Patient"}).code(404);
+    }
+    const data = {
+      id:patient.id,
+      patientId: patient.id,
+      name: patient.name,
+      email: patient.email,
+      createdAt: patient.createdAt,
+      updateAt: patient.updateAt,
+    }
+
+    logger.info("Patient fetched Successfully",RequestType.READ,name);
+    return h.response(data).code(200);
+
+  }catch(err:any){
+    logger.error("Internal Server Error occurred, failed to fetch Patient",RequestType.READ,name,err.toString());
+    return h.response({message: "Internal Server Error occurred, failed to fetch Patient"}).code(500);
   }
 }
 
@@ -722,12 +898,10 @@ export async function assignDoctorToPatientHandler(request: Hapi.Request, h: Hap
 // Get all patients assigned to a doctor
 export async function getDoctorPatientsHandler(request: Hapi.Request, h: Hapi.ResponseToolkit) {
   const { prisma, logger } = request.server.app;
-  const { userId,userType, name } = request.auth.credentials;
+  const doctorId = request.params.doctorId;
+  const {name } = request.auth.credentials;
   
-  let doctorId = 0;
-  if(userType === "doctor"){
-    doctorId = userId;
-  }
+
   try {
     const patients = await executePrismaMethod(prisma, "patient", "findMany", {
       where: {
