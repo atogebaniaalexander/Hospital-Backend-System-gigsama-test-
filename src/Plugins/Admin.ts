@@ -57,8 +57,9 @@ const adminPlugin: Hapi.Plugin<void> = {
               }
             }
           },
+          // default status endpoint
           {
-            // default status endpoint
+            
             method: "GET",
             path: "/api/v1/",
             handler: (_, h: Hapi.ResponseToolkit) =>
@@ -67,35 +68,6 @@ const adminPlugin: Hapi.Plugin<void> = {
               auth: false,
             },
           },
-          {
-            method: "POST",
-            path: "/api/v1/login",
-            handler: loginHandler,
-            options: {
-              auth: false,
-              validate: {
-                payload: Joi.object({
-                  email: Joi.string().email().required(),
-                  password: Joi.string().required(),
-                  role: Joi.string().valid("patient", "doctor","admin").required(),
-                }),
-                failAction: (request, h, err) => {
-                  throw err;
-                },
-              },
-            },
-          },
-          {
-            method: "GET",
-            path: "/api/v1/logout",
-            handler:logoutHandler,
-            options:{
-              auth:{
-                mode:"required",
-                strategy: API_AUTH_STRATEGY
-              }
-            }
-          }
          ]);
     }
 };

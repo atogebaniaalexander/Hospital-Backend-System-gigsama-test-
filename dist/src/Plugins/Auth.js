@@ -6,6 +6,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.API_AUTH_STRATEGY = void 0;
 const dotenv_1 = __importDefault(require("dotenv"));
 const Helpers_1 = require("../Helpers");
+const Handlers_1 = require("../Handlers");
+const joi_1 = __importDefault(require("joi"));
 dotenv_1.default.config();
 const JWT_SECRET = process.env.JWT_SECRET || "SUPER_SECRET_JWT_SECRET";
 const JWT_ALGORITHM = "HS256";
@@ -22,6 +24,40 @@ const authPlugin = {
             verifyOptions: { algorithms: [JWT_ALGORITHM] },
             validate: Helpers_1.validateAPIToken,
         });
+        server.route([
+            // login route
+            {
+                method: "POST",
+                path: "/api/v1/login",
+                handler: Handlers_1.loginHandler,
+                options: {
+                    auth: false,
+                    validate: {
+                        payload: joi_1.default.object({
+                            email: joi_1.default.string().email().required(),
+                            password: joi_1.default.string().required(),
+                            role: joi_1.default.string().valid("patient", "doctor", "admin").required(),
+                        }),
+                        failAction: (request, err) => {
+                            request.log("error", err);
+                            throw err;
+                        },
+                    },
+                },
+            },
+            // logout route
+            {
+                method: "GET",
+                path: "/api/v1/logout",
+                handler: Handlers_1.logoutHandler,
+                options: {
+                    auth: {
+                        mode: "required",
+                        strategy: exports.API_AUTH_STRATEGY
+                    }
+                }
+            }
+        ]);
     }
 };
 exports.default = authPlugin;

@@ -18,10 +18,15 @@ const doctorPlugin: Hapi.Plugin<void> = {
              path: "/api/v1/Doctor/create",
              handler: createDoctorHandler,
              options: {
-               auth: false,
+                pre: [isUserAdmin],
+               auth: {
+                  mode: "required",
+                  strategy: API_AUTH_STRATEGY,
+               },
                validate: {
                  payload: createDoctorInputValidator,
-                 failAction: (request, h, err) => {
+                 failAction: (request, err) => {
+                    request.log("error", err);
                    throw err;
                  },
                },
@@ -56,6 +61,7 @@ const doctorPlugin: Hapi.Plugin<void> = {
                 }),
                 payload: updateDoctorInputValidator,
                 failAction: (request, h, err) => {
+                  request.log("error", err);
                   throw err;
                 },
               }
@@ -76,7 +82,8 @@ const doctorPlugin: Hapi.Plugin<void> = {
                 params: Joi.object({
                   doctorId: Joi.string().required(),
                 }),
-                failAction: (request, h, err) => {
+                failAction: (request, err) => {
+                  request.log("error", err);
                   throw err;
                 },
               }

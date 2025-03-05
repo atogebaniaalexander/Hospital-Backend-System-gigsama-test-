@@ -19,10 +19,15 @@ const doctorPlugin = {
                 path: "/api/v1/Doctor/create",
                 handler: Handlers_1.createDoctorHandler,
                 options: {
-                    auth: false,
+                    pre: [Helpers_1.isUserAdmin],
+                    auth: {
+                        mode: "required",
+                        strategy: Auth_1.API_AUTH_STRATEGY,
+                    },
                     validate: {
                         payload: Validators_1.createDoctorInputValidator,
-                        failAction: (request, h, err) => {
+                        failAction: (request, err) => {
+                            request.log("error", err);
                             throw err;
                         },
                     },
@@ -57,6 +62,7 @@ const doctorPlugin = {
                         }),
                         payload: Validators_1.updateDoctorInputValidator,
                         failAction: (request, h, err) => {
+                            request.log("error", err);
                             throw err;
                         },
                     }
@@ -77,7 +83,8 @@ const doctorPlugin = {
                         params: joi_1.default.object({
                             doctorId: joi_1.default.string().required(),
                         }),
-                        failAction: (request, h, err) => {
+                        failAction: (request, err) => {
+                            request.log("error", err);
                             throw err;
                         },
                     }

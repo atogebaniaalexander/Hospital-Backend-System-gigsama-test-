@@ -1,6 +1,8 @@
 import Hapi from "@hapi/hapi";
 import dotenv from "dotenv";
 import { validateAPIToken } from "../Helpers";
+import { loginHandler, logoutHandler } from "../Handlers";
+import Joi from "joi";
 
 
 declare module "@hapi/hapi" {
@@ -34,6 +36,42 @@ const authPlugin: Hapi.Plugin<void> = {
            verifyOptions: { algorithms: [JWT_ALGORITHM] },
            validate: validateAPIToken,
          });
+
+         server.route([
+          // login route
+           {
+            method: "POST",
+            path: "/api/v1/login",
+            handler: loginHandler,
+            options: {
+              auth: false,
+              validate: {
+                payload: Joi.object({
+                  email: Joi.string().email().required(),
+                  password: Joi.string().required(),
+                  role: Joi.string().valid("patient", "doctor","admin").required(),
+                }),
+                failAction: (request, err) => {
+                  request.log("error", err);
+                  throw err;
+                },
+              },
+            },
+          },
+          // logout route
+           {
+            method: "GET",
+            path: "/api/v1/logout",
+            handler:logoutHandler,
+            options:{
+              auth:{
+                mode:"required",
+                strategy: API_AUTH_STRATEGY
+              }
+            }
+          }
+
+         ]);
     }
 };
 

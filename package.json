@@ -9,6 +9,7 @@
     "compile": "tsc -p ./tsconfig.json",
     "dev": "ts-node-dev --respawn ./src/index.ts",
     "seed-admin": "ts-node ./prisma/createAdmin.ts",
+    "seed-admin-npass": "ts-node ./prisma/changeAdminPassword.ts",
     "seek-admins": "ts-node ./prisma/listAdmins.ts",
     "test": "TEST=true jest",
     "test:watch": "TEST=true jest --watch",

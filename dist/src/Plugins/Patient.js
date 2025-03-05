@@ -22,7 +22,8 @@ const patientPlugin = {
                     auth: false,
                     validate: {
                         payload: Validators_1.createPatientInputValidator,
-                        failAction: (request, h, err) => {
+                        failAction: (request, err) => {
+                            request.log("error", err);
                             throw err;
                         },
                     },
@@ -56,7 +57,8 @@ const patientPlugin = {
                             patientId: joi_1.default.string().required(),
                         }),
                         payload: Validators_1.updatePatientInputValidator,
-                        failAction: (request, h, err) => {
+                        failAction: (request, err) => {
+                            request.log("error", err);
                             throw err;
                         },
                     }
@@ -77,7 +79,8 @@ const patientPlugin = {
                         params: joi_1.default.object({
                             patientId: joi_1.default.string().required(),
                         }),
-                        failAction: (request, h, err) => {
+                        failAction: (request, err) => {
+                            request.log("error", err);
                             throw err;
                         },
                     }
@@ -98,7 +101,8 @@ const patientPlugin = {
                         payload: joi_1.default.object({
                             doctorId: joi_1.default.string().required()
                         }),
-                        failAction: (request, h, err) => {
+                        failAction: (request, err) => {
+                            request.log("error", err);
                             throw err;
                         }
                     }
