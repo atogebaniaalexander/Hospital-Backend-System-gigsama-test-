@@ -53,8 +53,8 @@ function decodeAuthToken(token) {
 }
 //get user id
 function getUserId(request, h) {
-    const { userId } = request.auth.credentials;
-    return h.response({ userId }).code(200);
+    const { userId, userType } = request.auth.credentials;
+    return h.response({ id: userId, userType: userType }).code(200);
 }
 // reset password
 async function resetPasswordHandler(request, h) {
@@ -125,6 +125,10 @@ async function resetPasswordHandler(request, h) {
                 return h.response({ message: "Failed to send Password Reset Email" }).code(404);
             }
             logger.info("Password reset Successfully", Helpers_1.RequestType.UPDATE, user.name);
+        }
+        else {
+            logger.error("User not found", Helpers_1.RequestType.READ, email);
+            return h.response({ message: "User not found" }).code(404);
         }
         return h.response({ message: "Password reset Successfully" }).code(201);
     }

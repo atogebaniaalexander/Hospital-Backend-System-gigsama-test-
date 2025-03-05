@@ -45,8 +45,8 @@ export function decodeAuthToken(token: string){
 
 //get user id
 export function getUserId(request: Hapi.Request,h: Hapi.ResponseToolkit){
-    const { userId } = request.auth.credentials;
-    return h.response({userId}).code(200);
+    const { userId,userType } = request.auth.credentials;
+    return h.response({id:userId,userType:userType}).code(200);
 }
 
 // reset password
@@ -118,6 +118,9 @@ export async function resetPasswordHandler(request:Hapi.Request,h:Hapi.ResponseT
           return h.response({message: "Failed to send Password Reset Email"}).code(404);
         }
         logger.info("Password reset Successfully",RequestType.UPDATE,user.name);
+      }else{
+        logger.error("User not found",RequestType.READ,email);
+        return h.response({message: "User not found"}).code(404);
       }
       
       return h.response({message: "Password reset Successfully"}).code(201);
