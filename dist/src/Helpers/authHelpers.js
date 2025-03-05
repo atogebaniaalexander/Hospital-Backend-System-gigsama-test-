@@ -86,7 +86,7 @@ async function validateAPIToken(decoded, request, h) {
 async function isUserDoctor(request, h) {
     const { userId, userType, email } = request.auth.credentials;
     const { prisma } = request.server.app;
-    let doctorId = "";
+    let doctorId = 0;
     if (userType === "doctor") {
         doctorId = userId;
     }
@@ -107,7 +107,7 @@ async function isUserDoctor(request, h) {
 async function isUserAdmin(request, h) {
     const { userId, userType, email } = request.auth.credentials;
     const { prisma } = request.server.app;
-    let adminId = "";
+    let adminId = 0;
     if (userType === "admin") {
         adminId = userId;
     }
@@ -128,7 +128,7 @@ async function isUserAdmin(request, h) {
 async function isUserPatient(request, h) {
     const { userId, userType, email } = request.auth.credentials;
     const { prisma } = request.server.app;
-    let patientId = "";
+    let patientId = 0;
     if (userType === "patient") {
         patientId = userId;
     }
@@ -152,7 +152,7 @@ async function isDoctorOrAdmin(request, h) {
     let isDoctor = false;
     let isAdmin = false;
     if (credentials.userType === "doctor" || credentials.userType === "admin") {
-        if (credentials.userId === "doctor") {
+        if (credentials.userType === "doctor") {
             const doctorId = credentials.userId;
             const checkIfIsDoctor = await (0, Helpers_1.executePrismaMethod)(prisma, "doctor", "findFirst", {
                 where: {
@@ -165,7 +165,7 @@ async function isDoctorOrAdmin(request, h) {
             }
             isDoctor = true;
         }
-        else if (credentials.userId === "admin") {
+        else if (credentials.userType === "admin") {
             const adminId = credentials.userId;
             const checkIfIsAdmin = await (0, Helpers_1.executePrismaMethod)(prisma, "admin", "findFirst", {
                 where: {

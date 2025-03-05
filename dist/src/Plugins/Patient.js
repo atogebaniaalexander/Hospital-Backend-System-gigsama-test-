@@ -54,7 +54,7 @@ const patientPlugin = {
                     },
                     validate: {
                         params: joi_1.default.object({
-                            patientId: joi_1.default.string().required(),
+                            patientId: joi_1.default.number().required(),
                         }),
                         payload: Validators_1.updatePatientInputValidator,
                         failAction: (request, err) => {
@@ -77,7 +77,7 @@ const patientPlugin = {
                     },
                     validate: {
                         params: joi_1.default.object({
-                            patientId: joi_1.default.string().required(),
+                            patientId: joi_1.default.number().required(),
                         }),
                         failAction: (request, err) => {
                             request.log("error", err);
@@ -99,7 +99,7 @@ const patientPlugin = {
                     },
                     validate: {
                         payload: joi_1.default.object({
-                            doctorId: joi_1.default.string().required()
+                            doctorId: joi_1.default.number().required()
                         }),
                         failAction: (request, err) => {
                             request.log("error", err);

@@ -48,8 +48,8 @@ const adminPlugin = {
                     },
                     validate: {
                         payload: joi_1.default.object({
-                            doctorId: joi_1.default.string().required(),
-                            patientId: joi_1.default.string().required()
+                            doctorId: joi_1.default.number().required(),
+                            patientId: joi_1.default.number().required()
                         }),
                         failAction: (request, h, err) => {
                             throw err;

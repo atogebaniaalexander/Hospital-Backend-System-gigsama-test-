@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateActionableStepInputValidator = exports.createActionableStepInputValidator = exports.updateNotesInputValidator = exports.createNotesInputValidator = void 0;
 const joi_1 = __importDefault(require("joi"));
 const notesInputValidator = joi_1.default.object({
-    patientId: joi_1.default.string().alter({
+    patientId: joi_1.default.number().alter({
         create: (schema) => schema.required(),
         update: (schema) => schema.optional().allow(),
     }),
@@ -14,7 +14,7 @@ const notesInputValidator = joi_1.default.object({
         create: (schema) => schema.required(),
         update: (schema) => schema.optional().allow(),
     }),
-    doctorId: joi_1.default.string().alter({
+    doctorId: joi_1.default.number().alter({
         create: (schema) => schema.required(),
         update: (schema) => schema.optional().allow(),
     }),
@@ -22,7 +22,7 @@ const notesInputValidator = joi_1.default.object({
 exports.createNotesInputValidator = notesInputValidator.tailor("create");
 exports.updateNotesInputValidator = notesInputValidator.tailor("update");
 const ActionableStepInputValidator = joi_1.default.object({
-    noteId: joi_1.default.string().alter({
+    noteId: joi_1.default.number().alter({
         create: (schema) => schema.required(),
         update: (schema) => schema.optional().allow(),
     }),

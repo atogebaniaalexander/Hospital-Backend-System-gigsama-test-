@@ -2,7 +2,7 @@ import Joi from "joi";
 
 
 const notesInputValidator = Joi.object({
-  patientId: Joi.string().alter({
+  patientId: Joi.number().alter({
     create: (schema) => schema.required(),
     update: (schema) => schema.optional().allow(),
   }),
@@ -10,7 +10,7 @@ const notesInputValidator = Joi.object({
     create: (schema) => schema.required(),
     update: (schema) => schema.optional().allow(),
   }),
-  doctorId: Joi.string().alter({
+  doctorId: Joi.number().alter({
     create: (schema) => schema.required(),
     update: (schema) => schema.optional().allow(),
   }),
@@ -20,7 +20,7 @@ export const createNotesInputValidator = notesInputValidator.tailor("create");
 export const updateNotesInputValidator = notesInputValidator.tailor("update");
 
 const ActionableStepInputValidator = Joi.object({
-  noteId: Joi.string().alter({
+  noteId: Joi.number().alter({
     create: (schema) => schema.required(),
     update: (schema) => schema.optional().allow(),
   }),

@@ -48,8 +48,8 @@ const adminPlugin: Hapi.Plugin<void> = {
               },
               validate: {
                 payload: Joi.object({
-                  doctorId: Joi.string().required(),
-                  patientId: Joi.string().required()
+                  doctorId: Joi.number().required(),
+                  patientId: Joi.number().required()
                 }),
                 failAction: (request, h, err) => {
                   throw err;

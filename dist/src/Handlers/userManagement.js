@@ -302,7 +302,7 @@ async function createPatientHandler(request, h) {
 async function listPatientHandler(request, h) {
     const { prisma, logger } = request.server.app;
     const { name, userId, userType } = request.auth.credentials;
-    let adminId = " ";
+    let adminId = 0;
     if (userType === "admin") {
         adminId = userId;
     }
@@ -555,7 +555,7 @@ async function assignDoctorToPatientHandler(request, h) {
     const { prisma, logger } = request.server.app;
     const { doctorId } = request.payload;
     const { userId, userType, name } = request.auth.credentials;
-    let patientId = "";
+    let patientId = 0;
     if (userType === "patient") {
         patientId = userId;
     }
@@ -596,7 +596,7 @@ async function assignDoctorToPatientHandler(request, h) {
 async function getDoctorPatientsHandler(request, h) {
     const { prisma, logger } = request.server.app;
     const { userId, userType, name } = request.auth.credentials;
-    let doctorId = "";
+    let doctorId = 0;
     if (userType === "doctor") {
         doctorId = userId;
     }

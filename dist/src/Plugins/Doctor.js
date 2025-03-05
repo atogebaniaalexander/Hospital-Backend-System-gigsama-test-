@@ -58,7 +58,7 @@ const doctorPlugin = {
                     },
                     validate: {
                         params: joi_1.default.object({
-                            doctorId: joi_1.default.string().required(),
+                            doctorId: joi_1.default.number().required(),
                         }),
                         payload: Validators_1.updateDoctorInputValidator,
                         failAction: (request, h, err) => {
@@ -81,7 +81,7 @@ const doctorPlugin = {
                     },
                     validate: {
                         params: joi_1.default.object({
-                            doctorId: joi_1.default.string().required(),
+                            doctorId: joi_1.default.number().required(),
                         }),
                         failAction: (request, err) => {
                             request.log("error", err);

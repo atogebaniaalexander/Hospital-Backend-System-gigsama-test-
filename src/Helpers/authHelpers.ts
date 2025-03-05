@@ -7,7 +7,7 @@ export const AUTHENTICATION_TOKEN_EXPIRATION_MINUTES = 720;
 
 export interface UserAPITokenPayload {
   email: string;
-  userId: string;
+  userId: number;
   name: string;
   userType: string; // E.g., 'DOCTOR', 'PATIENT', 'ADMIN', etc.
 }
@@ -120,7 +120,7 @@ export async function validateAPIToken(
 export async function isUserDoctor(request: Hapi.Request, h: Hapi.ResponseToolkit) {
   const { userId,userType,email} = request.auth.credentials;
   const {prisma} = request.server.app;
-  let doctorId = "";
+  let doctorId = 0;
   if(userType === "doctor"){
     doctorId = userId;
   }else{
@@ -148,7 +148,7 @@ export async function isUserAdmin(
   const { userId,userType, email } = request.auth.credentials;
   const { prisma } = request.server.app;
 
-  let adminId = "";
+  let adminId = 0;
   if(userType === "admin"){
     adminId = userId;
   }else{
@@ -180,7 +180,7 @@ export async function isUserPatient(
   const { userId,userType, email } = request.auth.credentials;
   const { prisma } = request.server.app;
 
-  let patientId = "";
+  let patientId = 0;
   if(userType === "patient"){
     patientId = userId;
   }else{
@@ -212,7 +212,7 @@ export async function isDoctorOrAdmin( request: Hapi.Request, h: Hapi.ResponseTo
   let isAdmin = false;
   if(credentials.userType === "doctor" || credentials.userType === "admin"){
 
-    if(credentials.userId === "doctor"){
+    if(credentials.userType === "doctor"){
       const doctorId = credentials.userId;
       const checkIfIsDoctor = await executePrismaMethod(prisma,"doctor","findFirst",{
           where:{
@@ -227,7 +227,7 @@ export async function isDoctorOrAdmin( request: Hapi.Request, h: Hapi.ResponseTo
 
       isDoctor = true;
     }
-    else if(credentials.userId === "admin"){
+    else if(credentials.userType === "admin"){
         const adminId = credentials.userId;
       const checkIfIsAdmin = await executePrismaMethod(prisma,"admin","findFirst",{
           where:{

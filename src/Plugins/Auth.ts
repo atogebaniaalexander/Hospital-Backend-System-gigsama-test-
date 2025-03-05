@@ -7,8 +7,8 @@ import Joi from "joi";
 
 declare module "@hapi/hapi" {
   export interface AuthCredentials {
-    userId: string;
-    tokenId: string;
+    userId: number;
+    tokenId: number;
     email: string;
     name: string;
     userType:string;

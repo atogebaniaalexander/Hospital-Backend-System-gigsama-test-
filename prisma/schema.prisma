@@ -9,7 +9,7 @@ datasource db {
 }
 
 model Admin {
-  id        String    @id @default(uuid())
+  id        Int          @id @default(autoincrement())
   name      String
   email     String    @unique
   password  String
@@ -18,7 +18,7 @@ model Admin {
   token     Token?
 }
 model Doctor {
-  id        String    @id @default(uuid())
+  id         Int          @id @default(autoincrement())
   name      String
   email     String    @unique
   password  String
@@ -35,13 +35,13 @@ model Doctor {
 }
 
 model Patient {
-  id             String    @id @default(uuid())
+  id             Int          @id @default(autoincrement())
   name           String
   email          String    @unique
   password       String
   createdAt      String
   updatedAt      String
-  doctorId       String?
+  doctorId       Int?
   assignedDoctor Doctor?   @relation(fields: [doctorId], references: [id])
   notes          Note[]
   reminders      Reminder[]
@@ -52,10 +52,10 @@ model Patient {
 }
 
 model Note {
-  id              String          @id @default(uuid())
-  patientId       String
+  id               Int          @id @default(autoincrement())
+  patientId       Int
   patient         Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  doctorId        String
+  doctorId        Int
   doctor          Doctor          @relation(fields: [doctorId], references: [id], onDelete: Cascade)
   content         String
   createdAt       String
@@ -67,12 +67,12 @@ model Note {
 }
 
 model ActionableStep {
-  id            String       @id @default(uuid())
+  id            Int          @id @default(autoincrement())
   type          StepType
   description   String
   scheduledDate DateTime
   isCompleted   Boolean      @default(false)
-  noteId        String
+  noteId        Int
   note          Note         @relation(fields: [noteId], references: [id], onDelete: Cascade)
 
   @@index([noteId])
@@ -84,10 +84,10 @@ enum StepType {
 }
 
 model Reminder {
-  id            String   @id @default(uuid())
-  patientId     String
+  id             Int          @id @default(autoincrement())
+  patientId     Int
   patient       Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  doctorId      String
+  doctorId      Int
   doctor        Doctor   @relation(fields: [doctorId], references: [id], onDelete: Cascade)
   message       String
   scheduledTime DateTime
@@ -113,11 +113,11 @@ model Token {
   expiration    DateTime
   createdAt     String
   updatedAt     String
-  adminId       String? @unique
+  adminId       Int? @unique
   admin         Admin?    @relation(fields: [adminId],references: [id])
-  doctorId      String? @unique
+  doctorId      Int? @unique
   doctor        Doctor ?     @relation(fields: [doctorId], references: [id])
-  patientId      String? @unique
+  patientId      Int? @unique
   patient        Patient ?     @relation(fields: [patientId], references: [id])
   
 }

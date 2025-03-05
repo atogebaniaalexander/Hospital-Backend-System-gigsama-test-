@@ -55,7 +55,7 @@ const patientPlugin: Hapi.Plugin<void> = {
                 },
                 validate:{
                   params: Joi.object({
-                    patientId: Joi.string().required(),
+                    patientId: Joi.number().required(),
                   }),
                   payload: updatePatientInputValidator,
                   failAction: (request,err) => {
@@ -78,7 +78,7 @@ const patientPlugin: Hapi.Plugin<void> = {
                     },
                     validate:{
                       params: Joi.object({
-                        patientId: Joi.string().required(),
+                        patientId: Joi.number().required(),
                       }),
                       failAction: (request,err) => {
                         request.log("error", err);
@@ -100,7 +100,7 @@ const patientPlugin: Hapi.Plugin<void> = {
                 },
                 validate: {
                   payload: Joi.object({
-                    doctorId: Joi.string().required()
+                    doctorId: Joi.number().required()
                   }),
                   failAction: (request,err) => {
                     request.log("error", err);

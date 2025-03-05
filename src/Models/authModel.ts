@@ -15,14 +15,14 @@ export interface AdminModel {
 }
 
 export interface PatientModel {
-  id: string;
+  id: number;
   name: string;
   email: string;
   password: string;
 }
 
 export interface DoctorModel {
-  id: string;
+  id: number;
   name: string;
   email: string;
   password: string;

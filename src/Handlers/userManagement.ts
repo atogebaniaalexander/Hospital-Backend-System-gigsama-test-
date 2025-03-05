@@ -20,7 +20,7 @@ function generateAuthToken (
     name: string,
     email: string,
     tokenType: TokenType,
-    userId: string,
+    userId: number,
     userType: string,
 ){
     const jwtPayload = { name, email, tokenType, userId, userType };
@@ -393,7 +393,7 @@ export async function createPatientHandler(
 export async function listPatientHandler(request:Hapi.Request,h:Hapi.ResponseToolkit){
   const {prisma, logger} = request.server.app;
   const {name,userId,userType} = request.auth.credentials;
-  let adminId = " ";
+  let adminId = 0;
   if(userType === "admin"){
     adminId = userId;
   }
@@ -675,9 +675,9 @@ export async function logoutHandler(request: Hapi.Request, h: Hapi.ResponseToolk
 // Assign doctor to patient
 export async function assignDoctorToPatientHandler(request: Hapi.Request, h: Hapi.ResponseToolkit) {
   const { prisma, logger } = request.server.app;
-  const { doctorId } = request.payload as { doctorId: string };
+  const { doctorId } = request.payload as { doctorId: number };
   const { userId,userType, name } = request.auth.credentials;
-  let patientId = "";
+  let patientId = 0;
   if(userType === "patient"){
     patientId = userId;
   }
@@ -724,7 +724,7 @@ export async function getDoctorPatientsHandler(request: Hapi.Request, h: Hapi.Re
   const { prisma, logger } = request.server.app;
   const { userId,userType, name } = request.auth.credentials;
   
-  let doctorId = "";
+  let doctorId = 0;
   if(userType === "doctor"){
     doctorId = userId;
   }
@@ -799,7 +799,7 @@ export async function getAvailableDoctorsHandler(request: Hapi.Request, h: Hapi.
 // admin assign patient to doctor
 export async function adminAssignDoctorToPatientHandler(request: Hapi.Request, h: Hapi.ResponseToolkit) {
   const { prisma, logger } = request.server.app;
-  const { doctorId, patientId } = request.payload as { doctorId: string, patientId: string };
+  const { doctorId, patientId } = request.payload as { doctorId: number, patientId: number };
   const { name } = request.auth.credentials;
   
   try {
