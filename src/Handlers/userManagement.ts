@@ -222,14 +222,15 @@ export async function createDoctorHandler(request:Hapi.Request,h: Hapi.ResponseT
         }
         const sendMail = await doctorAccountCreationEmail(email,name,password);
         if(sendMail !== "Email sent"){
+         
+          await executePrismaMethod(prisma,"token","delete",{where:{id:DoctorToken.id}});
+          await executePrismaMethod(prisma,"doctor","delete",{where:{id:Doctor.id}});
           logger.error(
             "Failed to send Account Creation Email",
             RequestType.CREATE,
             Requester,
             sendMail.toString()
           );
-          await executePrismaMethod(prisma,"token","delete",{where:{id:DoctorToken.id}});
-          await executePrismaMethod(prisma,"doctor","delete",{where:{id:Doctor.id}});
           return h.response({ message: "Failed to send Account Creation Email" }).code(404);
         }
         logger.info("Doctor " + name + " was Successfully created!",RequestType.CREATE,Requester);
@@ -498,14 +499,15 @@ export async function createPatientHandler(
     
     const sendMail = await patientAccountCreationEmail(email,name,password);
     if(sendMail !== "Email sent"){
+      
+      await executePrismaMethod(prisma,"token","delete",{where:{id:PatientToken.id}});
+      await executePrismaMethod(prisma,"patient","delete",{where:{id:Patient.id}});
       logger.error(
         "Failed to send Account Creation Email",
         RequestType.CREATE,
         Requester,
         sendMail.toString()
       );
-      await executePrismaMethod(prisma,"token","delete",{where:{id:PatientToken.id}});
-      await executePrismaMethod(prisma,"patient","delete",{where:{id:Patient.id}});
       return h.response({ message: "Failed to send Account Creation Email" }).code(404);
     }
     logger.info( 

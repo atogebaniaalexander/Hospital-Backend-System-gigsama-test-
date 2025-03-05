@@ -189,9 +189,9 @@ async function createDoctorHandler(request, h) {
         }
         const sendMail = await (0, emailManagement_1.doctorAccountCreationEmail)(email, name, password);
         if (sendMail !== "Email sent") {
-            logger.error("Failed to send Account Creation Email", Helpers_1.RequestType.CREATE, Requester, sendMail.toString());
             await (0, Helpers_1.executePrismaMethod)(prisma, "token", "delete", { where: { id: DoctorToken.id } });
             await (0, Helpers_1.executePrismaMethod)(prisma, "doctor", "delete", { where: { id: Doctor.id } });
+            logger.error("Failed to send Account Creation Email", Helpers_1.RequestType.CREATE, Requester, sendMail.toString());
             return h.response({ message: "Failed to send Account Creation Email" }).code(404);
         }
         logger.info("Doctor " + name + " was Successfully created!", Helpers_1.RequestType.CREATE, Requester);
@@ -413,9 +413,9 @@ async function createPatientHandler(request, h) {
         }
         const sendMail = await (0, emailManagement_1.patientAccountCreationEmail)(email, name, password);
         if (sendMail !== "Email sent") {
-            logger.error("Failed to send Account Creation Email", Helpers_1.RequestType.CREATE, Requester, sendMail.toString());
             await (0, Helpers_1.executePrismaMethod)(prisma, "token", "delete", { where: { id: PatientToken.id } });
             await (0, Helpers_1.executePrismaMethod)(prisma, "patient", "delete", { where: { id: Patient.id } });
+            logger.error("Failed to send Account Creation Email", Helpers_1.RequestType.CREATE, Requester, sendMail.toString());
             return h.response({ message: "Failed to send Account Creation Email" }).code(404);
         }
         logger.info(name + " was Successfully created!", Helpers_1.RequestType.CREATE, Requester);

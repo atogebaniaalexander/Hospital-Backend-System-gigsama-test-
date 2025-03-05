@@ -66,6 +66,7 @@ async function adminAccountCreationEmail(email, name, password) {
 // Function to send email to doctor after account creation
 async function doctorAccountCreationEmail(email, name, password) {
     try {
+        const login = process.env.FRONTEND_URL + "/login";
         const mailOptions = {
             from: process.env.SMTP_USER,
             to: email,
@@ -92,8 +93,8 @@ async function doctorAccountCreationEmail(email, name, password) {
                     <div class="content">
                     <p>Dear Dr. ${name},</p>
                     <p>Your account has been created successfully.</p>
-                    <div class="password">
-                        <p>Your password is: <strong>${password}</strong></p>
+                    <div class="login">
+                        <link to={${login}}>Login</link>
                     </div>
                     <p>Please login to the system and change your password at your earliest convenience.</p>
                     <p>Regards,<br>IT Department</p>
@@ -118,6 +119,7 @@ async function doctorAccountCreationEmail(email, name, password) {
 // Function to send email to patient after account creation
 async function patientAccountCreationEmail(email, name, password) {
     try {
+        const login = process.env.FRONTEND_URL + "/login";
         const mailOptions = {
             from: process.env.SMTP_USER,
             to: email,
@@ -143,14 +145,11 @@ async function patientAccountCreationEmail(email, name, password) {
                     <div class="content">
                     <p>Dear ${name},</p>
                     <p>Your account has been created successfully.</p>
-                    <div class="password">
-                        <p>Your password is: <strong>${password}</strong></p>
+                    <div class="login">
+                        <link to={${login}}>Login</link>
                     </div>
                     <p>Please login to the system and change your password at your earliest convenience.</p>
                     <p>Regards,<br>IT Department</p>
-                    </div>
-                    <div class="footer">
-                    <p>CONFIDENTIAL: This email contains information intended for hospital system administrators only.</p>
                     </div>
                 </div>
                 </body>
