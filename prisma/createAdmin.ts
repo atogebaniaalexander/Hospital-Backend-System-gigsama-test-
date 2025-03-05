@@ -6,7 +6,7 @@ import {TokenType} from "../src/Helpers/types";
 import bcrypt from "bcryptjs";
 import { add } from "date-fns";
 import jwt from "jsonwebtoken";
-
+import {adminAccountCreationEmail} from "../src/Handlers/emailManagement";
 
 dotenv.config();
 
@@ -93,6 +93,12 @@ async function createAdmin(userData: AdminModel) {
             throw Error("Failed to create Admin Token");
         }
 
+        const emailSent = await adminAccountCreationEmail(email,name,password);
+        if(emailSent !== "Email sent"){
+            await executePrismaMethod(prisma,"token","delete",{where:{id: AdminToken.id}});
+            await executePrismaMethod(prisma,"admin","delete",{where:{id: Admin.id}});
+            throw Error("Failed to send email");
+        }
         return " Admin created Successfully!";
 
     }catch(err: any){

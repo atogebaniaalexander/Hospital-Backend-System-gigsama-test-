@@ -35,6 +35,7 @@
     "hapi-graceful-pm2": "^1.0.17",
     "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^6.10.0",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0"
   },

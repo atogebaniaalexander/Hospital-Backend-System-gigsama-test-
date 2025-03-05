@@ -16,12 +16,21 @@ const Admin_1 = __importDefault(require("./Plugins/Admin"));
 const Doctor_1 = __importDefault(require("./Plugins/Doctor"));
 const Patient_1 = __importDefault(require("./Plugins/Patient"));
 const Auth_1 = __importDefault(require("./Plugins/Auth"));
+const email_1 = __importDefault(require("./Plugins/email"));
 dotenv_1.default.config();
 const isProduction = process.env.NODE_ENV === "production";
 const server = hapi_1.default.server({
     port: process.env.PORT || 8001,
     host: process.env.HOST || "localhost",
-    routes: {}
+    routes: {
+        cors: {
+            origin: ["*"],
+            credentials: true,
+            headers: ["Accept", "Authorization", "Content-Type"],
+            additionalHeaders: ["cache-control", "x-requested-with"],
+            exposedHeaders: ["access-control-allow-origin", "access-control-allow-credentials"],
+        },
+    }
 });
 exports.default = server;
 async function createServer() {
@@ -40,6 +49,7 @@ async function createServer() {
         { plugin: hapi_auth_jwt2_1.default },
         { plugin: Auth_1.default },
         { plugin: prisma_1.default },
+        { plugin: email_1.default },
         { plugin: Admin_1.default },
         { plugin: Doctor_1.default },
         { plugin: Patient_1.default },

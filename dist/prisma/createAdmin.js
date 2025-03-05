@@ -10,6 +10,7 @@ const types_1 = require("../src/Helpers/types");
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const date_fns_1 = require("date-fns");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const emailManagement_1 = require("../src/Handlers/emailManagement");
 dotenv_1.default.config();
 const email = process.env.ADMINEMAIL || " ";
 const name = process.env.ADMINNAME || " ";
@@ -65,6 +66,12 @@ async function createAdmin(userData) {
         });
         if (!AdminToken) {
             throw Error("Failed to create Admin Token");
+        }
+        const emailSent = await (0, emailManagement_1.adminAccountCreationEmail)(email, name, password);
+        if (emailSent !== "Email sent") {
+            await (0, extras_1.executePrismaMethod)(prisma, "token", "delete", { where: { id: AdminToken.id } });
+            await (0, extras_1.executePrismaMethod)(prisma, "admin", "delete", { where: { id: Admin.id } });
+            throw Error("Failed to send email");
         }
         return " Admin created Successfully!";
     }

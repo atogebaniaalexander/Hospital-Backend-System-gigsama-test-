@@ -9,6 +9,7 @@ import adminPlugin from "./Plugins/Admin";
 import doctorPlugin from "./Plugins/Doctor";
 import patientPlugin from "./Plugins/Patient";
 import authPlugin from "./Plugins/Auth";
+import emailPlugin from "./Plugins/email";
 
 
 
@@ -25,7 +26,15 @@ const isProduction = process.env.NODE_ENV === "production";
 const server: Hapi.Server = Hapi.server({
   port: process.env.PORT || 8001,
   host: process.env.HOST || "localhost",
-  routes: {}
+  routes: {
+    cors: {
+      origin: ["*"],
+      credentials: true,
+      headers: ["Accept", "Authorization", "Content-Type"],
+      additionalHeaders:["cache-control", "x-requested-with"],
+      exposedHeaders: ["access-control-allow-origin", "access-control-allow-credentials"],
+    },
+  }
 });
 
 export default server;
@@ -47,6 +56,7 @@ export async function createServer(): Promise<Hapi.Server> {
     { plugin: hapiAuthJwt2 },
     { plugin: authPlugin },
     { plugin: prismaPlugin },
+    { plugin: emailPlugin },
     { plugin: adminPlugin },
     { plugin: doctorPlugin },
     { plugin: patientPlugin },
