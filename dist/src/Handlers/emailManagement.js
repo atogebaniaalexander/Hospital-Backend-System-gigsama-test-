@@ -4,12 +4,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.adminAccountCreationEmail = adminAccountCreationEmail;
-const server_1 = __importDefault(require("../server"));
+const email_1 = require("../Plugins/email");
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 async function adminAccountCreationEmail(email, name, password) {
     try {
-        const transporter = server_1.default.app.transporter;
         const mailOptions = {
             from: process.env.SMTP_USER,
             to: email,
@@ -53,14 +52,7 @@ async function adminAccountCreationEmail(email, name, password) {
             console.log("Missing credentials");
             return "Missing credentials";
         }
-        await transporter.sendMail(mailOptions, (error, info) => {
-            if (error) {
-                console.log(error);
-            }
-            else {
-                console.log("Email sent: " + info.response);
-            }
-        });
+        await email_1.transporter.sendMail(mailOptions);
         return "Email sent";
     }
     catch (e) {

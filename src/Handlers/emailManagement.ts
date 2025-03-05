@@ -1,12 +1,12 @@
 import Hapi from "@hapi/hapi";
-import server from "../server";
+import { transporter} from "../Plugins/email";
 import dotenv from "dotenv";
 
 dotenv.config();
 
 export async function adminAccountCreationEmail(email: string, name: string, password: string): Promise<String> {
     try{
-        const transporter = server.app.transporter;
+        
         const mailOptions = {
             from: process.env.SMTP_USER,
             to: email,
@@ -50,13 +50,7 @@ export async function adminAccountCreationEmail(email: string, name: string, pas
             console.log("Missing credentials");
             return "Missing credentials";
         }
-         await transporter.sendMail(mailOptions, (error: any, info: any) => {
-            if (error) {
-            console.log(error);
-            } else {
-            console.log("Email sent: " + info.response);
-            }
-        });
+         await transporter.sendMail(mailOptions);
 
         return "Email sent";
     }catch(e){
