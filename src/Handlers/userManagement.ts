@@ -274,9 +274,9 @@ export async function listDoctorsHandler(request:Hapi.Request, h:Hapi.ResponseTo
     }
     console.log("doctors available")
     let AllDoctors: any[] = [];
+    let id = 1;
     for(const doctor of doctors) {
       let status = "Unavailable";
-      let id = 1;
       if(doctor.available === true){
         status = "Available"
       }
@@ -288,8 +288,9 @@ export async function listDoctorsHandler(request:Hapi.Request, h:Hapi.ResponseTo
         specialty: doctor.specialty,
         workStatus: status,
       }
-      AllDoctors.push(data);
       id++
+      AllDoctors.push(data);
+      
     }
     logger.info("Doctors fetched Successfully",RequestType.READ,name);
     return h.response(AllDoctors).code(200);
@@ -551,7 +552,7 @@ export async function listPatientHandler(request:Hapi.Request,h:Hapi.ResponseToo
         name: true,
         email: true,
         createdAt: true,
-        updateAt: true,
+        updatedAt: true,
       }
     });
 
@@ -560,9 +561,10 @@ export async function listPatientHandler(request:Hapi.Request,h:Hapi.ResponseToo
       return h.response({message: "Failed to fetch Patients"}).code(404);
     }
     let AllPatients: any[] = [];
+    let id = 1;
     if(adminId) {
       for(const patient of patients) {
-        let id = 1;
+        
         const data = {
           id:id,
           patientId: patient.id,
@@ -694,7 +696,6 @@ export async function getPatientHandler(request:Hapi.Request,h:Hapi.ResponseTool
     }
     const data = {
       id:patient.id,
-      patientId: patient.id,
       name: patient.name,
       email: patient.email,
       createdAt: patient.createdAt,
@@ -920,8 +921,9 @@ export async function getDoctorPatientsHandler(request: Hapi.Request, h: Hapi.Re
     });
     
     let AllPatients: any[] = [];
+    let id = 1;
     for(const patient of patients){
-      let id = 1;
+      
       const data = {
         id: id,
         patientId: patient.id,
@@ -956,8 +958,9 @@ export async function getAvailableDoctorsHandler(request: Hapi.Request, h: Hapi.
       }
     });
      let AllDoctors: any[] = [];
+     let id = 1;
     for(const doctor of doctors) {
-      let id = 1;
+      
       const data = {
         id:id,
         doctorId: doctor.id,

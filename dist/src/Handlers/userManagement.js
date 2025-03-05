@@ -231,9 +231,9 @@ async function listDoctorsHandler(request, h) {
         }
         console.log("doctors available");
         let AllDoctors = [];
+        let id = 1;
         for (const doctor of doctors) {
             let status = "Unavailable";
-            let id = 1;
             if (doctor.available === true) {
                 status = "Available";
             }
@@ -245,8 +245,8 @@ async function listDoctorsHandler(request, h) {
                 specialty: doctor.specialty,
                 workStatus: status,
             };
-            AllDoctors.push(data);
             id++;
+            AllDoctors.push(data);
         }
         logger.info("Doctors fetched Successfully", Helpers_1.RequestType.READ, name);
         return h.response(AllDoctors).code(200);
@@ -450,7 +450,7 @@ async function listPatientHandler(request, h) {
                 name: true,
                 email: true,
                 createdAt: true,
-                updateAt: true,
+                updatedAt: true,
             }
         });
         if (!patients) {
@@ -458,9 +458,9 @@ async function listPatientHandler(request, h) {
             return h.response({ message: "Failed to fetch Patients" }).code(404);
         }
         let AllPatients = [];
+        let id = 1;
         if (adminId) {
             for (const patient of patients) {
-                let id = 1;
                 const data = {
                     id: id,
                     patientId: patient.id,
@@ -582,7 +582,6 @@ async function getPatientHandler(request, h) {
         }
         const data = {
             id: patient.id,
-            patientId: patient.id,
             name: patient.name,
             email: patient.email,
             createdAt: patient.createdAt,
@@ -777,8 +776,8 @@ async function getDoctorPatientsHandler(request, h) {
             }
         });
         let AllPatients = [];
+        let id = 1;
         for (const patient of patients) {
-            let id = 1;
             const data = {
                 id: id,
                 patientId: patient.id,
@@ -813,8 +812,8 @@ async function getAvailableDoctorsHandler(request, h) {
             }
         });
         let AllDoctors = [];
+        let id = 1;
         for (const doctor of doctors) {
-            let id = 1;
             const data = {
                 id: id,
                 doctorId: doctor.id,
